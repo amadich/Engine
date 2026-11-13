@@ -6,15 +6,16 @@ int main(int argc, char *argv[])
 {
     QQuickStyle::setStyle("Basic");
     QGuiApplication app(argc, argv);
-
     QQmlApplicationEngine engine;
+
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
         &app,
         []() { QCoreApplication::exit(-1); },
-        Qt::QueuedConnection);
-    engine.loadFromModule("JeridiEngine", "Main");
+        Qt::QueuedConnection
+    );
 
-    return QGuiApplication::exec();
+    engine.loadFromModule("JeridiEngine", "Main");
+    return app.exec();
 }
