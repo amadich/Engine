@@ -17,6 +17,7 @@ class ProjectController : public QObject
     Q_PROPERTY(QString activeProjectPath READ activeProjectPath NOTIFY activeProjectChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(bool devServerActive READ devServerActive NOTIFY busyChanged)
+    Q_PROPERTY(QUrl previewUrl READ previewUrl NOTIFY previewUrlChanged)
 
 public:
     explicit ProjectController(QObject *parent = nullptr);
@@ -24,8 +25,8 @@ public:
     QString activeProjectName() const;
     QString activeProjectPath() const;
     bool busy() const;
-
     bool devServerActive() const;
+    QUrl previewUrl() const;
 
     Q_INVOKABLE void startDevServer();
     Q_INVOKABLE void stopDevServer();
@@ -45,12 +46,15 @@ signals:
     void logMessage(const QString &message);
     void outputReceived(const QString &text);
     void projectCreated(const QString &projectName, const QString &projectPath);
+    void previewUrlChanged();
 
 private:
     QString m_activeProjectName;
     QString m_activeProjectPath;
     ProcessRunner m_processRunner;
     bool m_devServerRequested = false;
+    QUrl m_previewUrl;
+    QString m_devServerOutputTail;
 };
 
 #endif

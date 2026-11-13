@@ -4,6 +4,15 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 
+namespace {
+const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
+}
+
+QUrl ProjectController::previewUrl() const
+{
+    return m_previewUrl;
+}
+
 ProjectController::ProjectController(QObject *parent)
     : QObject(parent)
 {
@@ -11,6 +20,12 @@ ProjectController::ProjectController(QObject *parent)
             this, [this]() {
                 if (!busy()) {
                     m_devServerRequested = false;
+                    m_devServerOutputTail.clear();
+
+                    if (!m_previewUrl.isEmpty()) {
+                        m_previewUrl = QUrl();
+                        emit previewUrlChanged();
+                    }
                 }
 
                 emit busyChanged();
@@ -18,7 +33,26 @@ ProjectController::ProjectController(QObject *parent)
     connect(&m_processRunner, &ProcessRunner::logMessage,
             this, &ProjectController::logMessage);
     connect(&m_processRunner, &ProcessRunner::outputReceived,
-            this, &ProjectController::outputReceived);
+            this, [this](const QString &text) {
+                emit outputReceived(text);
+
+                if (!devServerActive() || !m_previewUrl.isEmpty()) {
+                    return;
+                }
+
+                m_devServerOutputTail += text;
+
+                if (m_devServerOutputTail.contains(devServerAddress)) {
+                    m_previewUrl = QUrl(devServerAddress);
+                    m_devServerOutputTail.clear();
+                    emit previewUrlChanged();
+                    return;
+                }
+
+                // Keep enough text to recognize the URL across two output chunks.
+                m_devServerOutputTail =
+                    m_devServerOutputTail.right(devServerAddress.size() - 1);
+            });
 }
 
 QString ProjectController::activeProjectName() const

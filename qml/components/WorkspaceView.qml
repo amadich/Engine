@@ -3,6 +3,11 @@ import QtQuick.Controls
 import JeridiEngine
 
 SplitView {
+    id: root
+    property url previewUrl: ""
+    property bool devServerActive: false
+
+
     orientation: Qt.Horizontal
 
     ComponentLibraryPanel {
@@ -13,6 +18,8 @@ SplitView {
     PreviewPanel {
         SplitView.fillWidth: true
         SplitView.minimumWidth: 360
+        previewUrl: root.previewUrl
+        devServerActive: root.devServerActive
     }
 
     InspectorPanel {

@@ -68,6 +68,8 @@ ApplicationWindow {
         WorkspaceView {
             SplitView.fillHeight: true
             SplitView.minimumHeight: 300
+            previewUrl: projectController.previewUrl
+            devServerActive: projectController.devServerActive
         }
 
         OutputPanel {
