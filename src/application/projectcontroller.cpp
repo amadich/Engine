@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QSaveFile>
 
 namespace {
 const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
@@ -272,4 +273,83 @@ void ProjectController::stopDevServer()
     if (devServerActive()) {
         m_processRunner.stop();
     }
+}
+
+
+
+
+
+void ProjectController::addButtonComponent()
+{
+    if (m_activeProjectPath.isEmpty()) {
+        emit logMessage("Error: Open a React project first.");
+        return;
+    }
+
+    if (busy() && !devServerActive()) {
+        emit logMessage("Error: Wait for the current command to finish.");
+        return;
+    }
+
+    const QDir projectDirectory(m_activeProjectPath);
+
+    if (!QFileInfo(projectDirectory.filePath("src/App.tsx")).isFile()) {
+        emit logMessage("Error: This action expects a React TypeScript project.");
+        return;
+    }
+
+    if (!projectDirectory.mkpath("src/components")) {
+        emit logMessage("Error: Could not create src/components.");
+        return;
+    }
+
+    const QString relativePath = QStringLiteral("src/components/EngineButton.tsx");
+    const QString filePath = projectDirectory.absoluteFilePath(relativePath);
+    const QFileInfo existingFile(filePath);
+
+    if (existingFile.exists() || existingFile.isSymLink()) {
+        emit logMessage("Component already exists: " + relativePath);
+        return;
+    }
+
+    const QByteArray source = R"tsx(import type { ButtonHTMLAttributes } from 'react'
+
+type EngineButtonProps = ButtonHTMLAttributes<HTMLButtonElement>
+
+export default function EngineButton({
+  children = 'Engine Button',
+  type = 'button',
+  style,
+  ...props
+}: EngineButtonProps) {
+  return (
+    <button
+      {...props}
+      type={type}
+      style={{
+        padding: '10px 16px',
+        border: '1px solid #818cf8',
+        borderRadius: '8px',
+        backgroundColor: '#4338ca',
+        color: '#fff',
+        cursor: 'pointer',
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+)tsx";
+
+    QSaveFile file(filePath);
+
+    if (!file.open(QIODevice::WriteOnly)
+        || file.write(source) != source.size()
+        || !file.commit()) {
+        emit logMessage("Error: Could not save component: " + file.errorString());
+        return;
+    }
+
+    emit logMessage("Component created: " + relativePath);
 }

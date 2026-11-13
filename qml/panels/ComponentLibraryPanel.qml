@@ -3,6 +3,11 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 Rectangle {
+    id: root
+
+    property bool canAddComponent: false
+    signal addButtonRequested()
+
     color: "#111827"
 
     ColumnLayout {
@@ -24,7 +29,14 @@ Rectangle {
 
         Label {
             Layout.fillWidth: true
-            text: "Your components will appear here."
+
+            Button {
+                Layout.fillWidth: true
+                text: "Add Button"
+                enabled: root.canAddComponent
+                onClicked: root.addButtonRequested()
+            }
+
             color: "#94A3B8"
             wrapMode: Text.WordWrap
         }

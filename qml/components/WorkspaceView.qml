@@ -7,12 +7,17 @@ SplitView {
     property url previewUrl: ""
     property bool devServerActive: false
 
+    property bool canAddComponent: false
+    signal addButtonRequested()
 
     orientation: Qt.Horizontal
 
     ComponentLibraryPanel {
         SplitView.preferredWidth: 260
         SplitView.minimumWidth: 180
+
+        canAddComponent: root.canAddComponent
+        onAddButtonRequested: root.addButtonRequested()
     }
 
     PreviewPanel {

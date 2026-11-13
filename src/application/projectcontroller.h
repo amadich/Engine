@@ -40,6 +40,8 @@ public:
     Q_INVOKABLE void checkNpm();
     Q_INVOKABLE void generateReact();
 
+    Q_INVOKABLE void addButtonComponent();
+
 signals:
     void activeProjectChanged();
     void busyChanged();

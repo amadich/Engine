@@ -70,6 +70,12 @@ ApplicationWindow {
             SplitView.minimumHeight: 300
             previewUrl: projectController.previewUrl
             devServerActive: projectController.devServerActive
+
+            canAddComponent: projectController.activeProjectPath !== ""
+                             && (!projectController.busy
+                                 || projectController.devServerActive)
+
+            onAddButtonRequested: projectController.addButtonComponent()
         }
 
         OutputPanel {
