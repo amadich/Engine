@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QFile>
 
 namespace {
 const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
@@ -312,35 +313,23 @@ void ProjectController::addButtonComponent()
         return;
     }
 
-    const QByteArray source = R"tsx(import type { ButtonHTMLAttributes } from 'react'
+    const QString templatePath =
+        QStringLiteral(":/templates/react/engine-button/EngineButton.tsx");
 
-type EngineButtonProps = ButtonHTMLAttributes<HTMLButtonElement>
+    QFile templateFile(templatePath);
 
-export default function EngineButton({
-  children = 'Engine Button',
-  type = 'button',
-  style,
-  ...props
-}: EngineButtonProps) {
-  return (
-    <button
-      {...props}
-      type={type}
-      style={{
-        padding: '10px 16px',
-        border: '1px solid #818cf8',
-        borderRadius: '8px',
-        backgroundColor: '#4338ca',
-        color: '#fff',
-        cursor: 'pointer',
-        ...style,
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-)tsx";
+    if (!templateFile.open(QIODevice::ReadOnly)) {
+        emit logMessage("Error: Could not open template: " + templatePath
+                        + " (" + templateFile.errorString() + ")");
+        return;
+    }
+
+    const QByteArray source = templateFile.readAll();
+
+    if (templateFile.error() != QFileDevice::NoError || source.isEmpty()) {
+        emit logMessage("Error: Could not read component template: " + templatePath);
+        return;
+    }
 
     QSaveFile file(filePath);
 

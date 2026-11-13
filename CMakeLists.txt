@@ -12,6 +12,13 @@ qt_add_executable(appJeridiEngine
     src/main.cpp
 )
 
+qt_add_resources(appJeridiEngine component_templates
+    PREFIX "/templates"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/templates"
+    FILES
+        templates/react/engine-button/EngineButton.tsx
+)
+
 set(engine_qml_files
     qml/Main.qml
     qml/components/EngineToolbar.qml
