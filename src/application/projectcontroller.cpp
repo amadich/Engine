@@ -8,7 +8,13 @@ ProjectController::ProjectController(QObject *parent)
     : QObject(parent)
 {
     connect(&m_processRunner, &ProcessRunner::runningChanged,
-            this, &ProjectController::busyChanged);
+            this, [this]() {
+                if (!busy()) {
+                    m_devServerRequested = false;
+                }
+
+                emit busyChanged();
+            });
     connect(&m_processRunner, &ProcessRunner::logMessage,
             this, &ProjectController::logMessage);
     connect(&m_processRunner, &ProcessRunner::outputReceived,
@@ -127,4 +133,109 @@ void ProjectController::generateReact()
          "react-ts", "--no-interactive"},
         projectDirectory.absolutePath()
     );
+}
+
+
+
+bool ProjectController::openProject(const QUrl &folder)
+{
+    if (busy()) {
+        emit logMessage("A process is already running.");
+        return false;
+    }
+
+    if (!folder.isLocalFile() || folder.toLocalFile().isEmpty()) {
+        emit logMessage("Error: Choose a local project folder.");
+        return false;
+    }
+
+    const QDir directory(folder.toLocalFile());
+    const QFileInfo manifest(directory.filePath("package.json"));
+
+    if (!manifest.isFile()) {
+        emit logMessage("Error: Choose the project folder containing package.json.");
+        return false;
+    }
+
+    m_activeProjectName = directory.dirName();
+    m_activeProjectPath = directory.absolutePath();
+    emit activeProjectChanged();
+
+    emit logMessage("Project opened: " + m_activeProjectPath);
+    return true;
+}
+
+void ProjectController::installDependencies()
+{
+    if (busy()) {
+        emit logMessage("A process is already running.");
+        return;
+    }
+
+    if (m_activeProjectPath.isEmpty()) {
+        emit logMessage("Error: Open or generate an npm project first.");
+        return;
+    }
+
+    const QDir directory(m_activeProjectPath);
+    const QFileInfo manifest(directory.filePath("package.json"));
+
+    if (!manifest.isFile()) {
+        emit logMessage("Error: No package.json found. Generate React first.");
+        return;
+    }
+
+    m_processRunner.run("npm", {"install"}, m_activeProjectPath);
+}
+
+
+bool ProjectController::devServerActive() const
+{
+    return m_devServerRequested && busy();
+}
+
+void ProjectController::startDevServer()
+{
+    if (busy()) {
+        emit logMessage("A process is already running.");
+        return;
+    }
+
+    if (m_activeProjectPath.isEmpty()) {
+        emit logMessage("Error: Open a project first.");
+        return;
+    }
+
+    const QDir projectDirectory(m_activeProjectPath);
+    const QString viteScript =
+        projectDirectory.absoluteFilePath("node_modules/vite/bin/vite.js");
+
+    if (!QFileInfo(projectDirectory.filePath("package.json")).isFile()
+        || !QFileInfo(viteScript).isFile()) {
+        emit logMessage(
+            "Error: Open a Vite project and install dependencies first."
+            );
+        return;
+    }
+
+    m_devServerRequested = true;
+
+    m_processRunner.run(
+        "node",
+        {viteScript, "--host", "127.0.0.1", "--port", "5173",
+         "--strictPort"},
+        m_activeProjectPath
+        );
+
+    // run() can return early if it cannot find the executable.
+    if (!busy()) {
+        m_devServerRequested = false;
+    }
+}
+
+void ProjectController::stopDevServer()
+{
+    if (devServerActive()) {
+        m_processRunner.stop();
+    }
 }

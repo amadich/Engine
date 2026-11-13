@@ -16,6 +16,7 @@ class ProjectController : public QObject
     Q_PROPERTY(QString activeProjectName READ activeProjectName NOTIFY activeProjectChanged)
     Q_PROPERTY(QString activeProjectPath READ activeProjectPath NOTIFY activeProjectChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+    Q_PROPERTY(bool devServerActive READ devServerActive NOTIFY busyChanged)
 
 public:
     explicit ProjectController(QObject *parent = nullptr);
@@ -24,8 +25,17 @@ public:
     QString activeProjectPath() const;
     bool busy() const;
 
+    bool devServerActive() const;
+
+    Q_INVOKABLE void startDevServer();
+    Q_INVOKABLE void stopDevServer();
+
     Q_INVOKABLE bool createProject(const QString &projectName,
                                   const QUrl &parentFolder);
+
+    Q_INVOKABLE bool openProject(const QUrl &folder);
+    Q_INVOKABLE void installDependencies();
+
     Q_INVOKABLE void checkNpm();
     Q_INVOKABLE void generateReact();
 
@@ -40,6 +50,7 @@ private:
     QString m_activeProjectName;
     QString m_activeProjectPath;
     ProcessRunner m_processRunner;
+    bool m_devServerRequested = false;
 };
 
 #endif

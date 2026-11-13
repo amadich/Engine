@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import JeridiEngine
+import QtQuick.Dialogs
 
 ApplicationWindow {
     id: window
@@ -37,12 +38,27 @@ ApplicationWindow {
         onCreateProjectRequested: createProjectDialog.open()
         onCheckNpmRequested: projectController.checkNpm()
         onGenerateReactRequested: projectController.generateReact()
+
+        onOpenProjectRequested: openProjectDialog.open()
+        onInstallDependenciesRequested: projectController.installDependencies()
+
+        devServerActive: projectController.devServerActive
+
+        onRunRequested: projectController.startDevServer()
+        onStopRequested: projectController.stopDevServer()
     }
 
     CreateProjectDialog {
         id: createProjectDialog
         parent: Overlay.overlay
         controller: projectController
+    }
+
+    FolderDialog {
+        id: openProjectDialog
+        title: "Open npm project folder"
+
+        onAccepted: projectController.openProject(selectedFolder)
     }
 
     SplitView {

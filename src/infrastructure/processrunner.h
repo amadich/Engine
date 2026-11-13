@@ -16,6 +16,7 @@ public:
     void run(const QString &program,
              const QStringList &arguments,
              const QString &workingDirectory = QString());
+    void stop();
 
 signals:
     void runningChanged();

@@ -8,10 +8,17 @@ ToolBar {
     property string projectName: ""
     property string projectPath: ""
     property bool busy: false
+    property bool devServerActive: false
 
     signal createProjectRequested()
     signal checkNpmRequested()
     signal generateReactRequested()
+
+    signal openProjectRequested()
+    signal installDependenciesRequested()
+
+    signal runRequested()
+    signal stopRequested()
 
     background: Rectangle {
         color: "#111827"
@@ -54,6 +61,12 @@ ToolBar {
         }
 
         Button {
+            text: "Open Project"
+            enabled: !root.busy
+            onClicked: root.openProjectRequested()
+        }
+
+        Button {
             text: root.busy ? "Running..." : "Check npm"
             enabled: !root.busy
             onClicked: root.checkNpmRequested()
@@ -66,8 +79,24 @@ ToolBar {
         }
 
         Button {
-            text: "Run"
-            enabled: false
+            text: "Install Dependencies"
+            enabled: root.projectPath !== "" && !root.busy
+            onClicked: root.installDependenciesRequested()
+        }
+
+        Button {
+            text: root.devServerActive ? "Stop" : "Run"
+
+            enabled: root.devServerActive
+                     || (root.projectPath !== "" && !root.busy)
+
+            onClicked: {
+                if (root.devServerActive) {
+                    root.stopRequested()
+                } else {
+                    root.runRequested()
+                }
+            }
         }
     }
 }

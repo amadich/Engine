@@ -102,3 +102,11 @@ void ProcessRunner::run(const QString &program,
 
     m_process.start(executable, arguments);
 }
+
+
+void ProcessRunner::stop()
+{
+    if (running()) {
+        m_process.terminate();
+    }
+}
