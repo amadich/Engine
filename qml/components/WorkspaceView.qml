@@ -10,6 +10,8 @@ SplitView {
     property bool canAddComponent: false
     signal addButtonRequested()
 
+    property var selectedFileDetails: ({})
+
     orientation: Qt.Horizontal
 
     ComponentLibraryPanel {
@@ -30,5 +32,6 @@ SplitView {
     InspectorPanel {
         SplitView.preferredWidth: 280
         SplitView.minimumWidth: 200
+        fileDetails: root.selectedFileDetails
     }
 }

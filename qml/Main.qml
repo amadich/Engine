@@ -14,8 +14,15 @@ ApplicationWindow {
     title: "Jeridi Engine"
     color: "#0B1120"
 
+    property url selectedFileUrl: ""
+    property var selectedFileDetails: ({})
+
     ProjectController {
         id: projectController
+        function onActiveProjectChanged() {
+            window.selectedFileUrl = ""
+            window.selectedFileDetails = ({})
+        }
     }
 
     Connections {
@@ -76,12 +83,36 @@ ApplicationWindow {
                                  || projectController.devServerActive)
 
             onAddButtonRequested: projectController.addButtonComponent()
+            selectedFileDetails: window.selectedFileDetails
+
+
         }
 
-        OutputPanel {
-            id: outputPanel
-            SplitView.preferredHeight: 200
-            SplitView.minimumHeight: 100
+        SplitView {
+            orientation: Qt.Horizontal
+
+            SplitView.preferredHeight: 260
+            SplitView.minimumHeight: 140
+
+            ProjectFilesPanel {
+                SplitView.preferredWidth: 340
+                SplitView.minimumWidth: 220
+
+                projectFolder: projectController.projectFolderUrl
+                selectedFile: window.selectedFileUrl
+
+                onFileSelected: function(file) {
+                    window.selectedFileUrl = file
+                    window.selectedFileDetails = projectController.inspectFile(file)
+                }
+            }
+
+            OutputPanel {
+                id: outputPanel
+
+                SplitView.fillWidth: true
+                SplitView.minimumWidth: 240
+            }
         }
     }
 }

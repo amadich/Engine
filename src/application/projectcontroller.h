@@ -7,6 +7,7 @@
 #include <QString>
 #include <QUrl>
 #include <QtQml/qqmlregistration.h>
+#include <QVariantMap>
 
 class ProjectController : public QObject
 {
@@ -15,15 +16,20 @@ class ProjectController : public QObject
 
     Q_PROPERTY(QString activeProjectName READ activeProjectName NOTIFY activeProjectChanged)
     Q_PROPERTY(QString activeProjectPath READ activeProjectPath NOTIFY activeProjectChanged)
+    Q_PROPERTY(QUrl projectFolderUrl READ projectFolderUrl NOTIFY activeProjectChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(bool devServerActive READ devServerActive NOTIFY busyChanged)
     Q_PROPERTY(QUrl previewUrl READ previewUrl NOTIFY previewUrlChanged)
+
+
 
 public:
     explicit ProjectController(QObject *parent = nullptr);
 
     QString activeProjectName() const;
     QString activeProjectPath() const;
+    QUrl projectFolderUrl() const;
+
     bool busy() const;
     bool devServerActive() const;
     QUrl previewUrl() const;
@@ -41,6 +47,7 @@ public:
     Q_INVOKABLE void generateReact();
 
     Q_INVOKABLE void addButtonComponent();
+    Q_INVOKABLE QVariantMap inspectFile(const QUrl &fileUrl) const;
 
 signals:
     void activeProjectChanged();

@@ -342,3 +342,85 @@ void ProjectController::addButtonComponent()
 
     emit logMessage("Component created: " + relativePath);
 }
+
+
+
+
+QUrl ProjectController::projectFolderUrl() const
+{
+    if (m_activeProjectPath.isEmpty()) {
+        return {};
+    }
+
+    return QUrl::fromLocalFile(m_activeProjectPath);
+}
+
+QVariantMap ProjectController::inspectFile(const QUrl &fileUrl) const
+{
+    if (m_activeProjectPath.isEmpty() || !fileUrl.isLocalFile()) {
+        return {{"error", "Open a project and choose a local file."}};
+    }
+
+    const QString projectRoot = QDir(m_activeProjectPath).canonicalPath();
+    const QFileInfo fileInfo(fileUrl.toLocalFile());
+    const QString filePath = fileInfo.canonicalFilePath();
+
+    if (projectRoot.isEmpty() || filePath.isEmpty() || !fileInfo.isFile()) {
+        return {{"error", "The selected file is unavailable."}};
+    }
+
+    const QString relativePath = QDir(projectRoot).relativeFilePath(filePath);
+
+    if (relativePath == ".." || relativePath.startsWith("../")
+        || QDir::isAbsolutePath(relativePath)) {
+        return {{"error", "The selected file is outside the project."}};
+    }
+
+    const QString suffix = fileInfo.suffix().toLower();
+
+    QVariantMap details{
+        {"name", fileInfo.fileName()},
+        {"path", relativePath},
+        {"extension", suffix},
+        {"size", fileInfo.size()},
+        {"kind", "file"}
+    };
+
+    const QStringList imageExtensions{
+        "png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"
+    };
+
+    if (imageExtensions.contains(suffix)) {
+        details["kind"] = "image";
+        details["imageUrl"] = QUrl::fromLocalFile(filePath);
+        return details;
+    }
+
+    const QStringList textExtensions{
+        "tsx", "ts", "jsx", "js", "json", "css", "html",
+        "md", "txt", "qml", "cpp", "h"
+    };
+
+    if (textExtensions.contains(suffix)) {
+        QFile file(filePath);
+
+        if (!file.open(QIODevice::ReadOnly)) {
+            details["error"] = file.errorString();
+            return details;
+        }
+
+        constexpr qint64 limit = 64 * 1024;
+        const QByteArray content = file.read(limit);
+
+        if (file.error() != QFileDevice::NoError) {
+            details["error"] = file.errorString();
+            return details;
+        }
+
+        details["kind"] = "text";
+        details["text"] = QString::fromUtf8(content);
+        details["truncated"] = !file.atEnd();
+    }
+
+    return details;
+}

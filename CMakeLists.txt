@@ -27,6 +27,7 @@ set(engine_qml_files
     qml/panels/PreviewPanel.qml
     qml/panels/InspectorPanel.qml
     qml/panels/OutputPanel.qml
+    qml/panels/ProjectFilesPanel.qml
     qml/dialogs/CreateProjectDialog.qml
 )
 
@@ -46,7 +47,7 @@ qt_add_qml_module(appJeridiEngine
         src/application/projectcontroller.h
         src/application/projectcontroller.cpp
         src/infrastructure/processrunner.h
-        src/infrastructure/processrunner.cpp
+        src/infrastructure/processrunner.cpp 
 )
 
 target_include_directories(appJeridiEngine PRIVATE
