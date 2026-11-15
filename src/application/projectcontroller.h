@@ -8,6 +8,7 @@
 #include <QUrl>
 #include <QtQml/qqmlregistration.h>
 #include <QVariantMap>
+#include <QVariantList>
 
 class ProjectController : public QObject
 {
@@ -52,6 +53,7 @@ public:
     Q_INVOKABLE QString saveTextFile(const QUrl &fileUrl,
                                      const QString &originalText,
                                      const QString &newText);
+    Q_INVOKABLE QVariantList quickOpenFiles() const;
 
 signals:
     void activeProjectChanged();

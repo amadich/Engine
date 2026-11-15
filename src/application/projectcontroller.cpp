@@ -10,6 +10,20 @@ namespace {
 const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
 }
 
+namespace {
+
+bool isEditableTextFile(const QString &suffix)
+{
+    static const QStringList extensions{
+        "tsx", "ts", "jsx", "js", "json", "css", "html",
+        "md", "txt", "qml", "cpp", "h"
+    };
+
+    return extensions.contains(suffix.toLower());
+}
+
+}
+
 QUrl ProjectController::previewUrl() const
 {
     return m_previewUrl;
@@ -396,30 +410,32 @@ QVariantMap ProjectController::inspectFile(const QUrl &fileUrl) const
         return details;
     }
 
-    const QStringList textExtensions{
-        "tsx", "ts", "jsx", "js", "json", "css", "html",
-        "md", "txt", "qml", "cpp", "h"
-    };
+    if (isEditableTextFile(suffix)) {
+        const QStringList textExtensions{
+            "tsx", "ts", "jsx", "js", "json", "css", "html",
+            "md", "txt", "qml", "cpp", "h"
+        };
 
-    if (textExtensions.contains(suffix)) {
-        QFile file(filePath);
+        if (textExtensions.contains(suffix)) {
+            QFile file(filePath);
 
-        if (!file.open(QIODevice::ReadOnly)) {
-            details["error"] = file.errorString();
-            return details;
+            if (!file.open(QIODevice::ReadOnly)) {
+                details["error"] = file.errorString();
+                return details;
+            }
+
+            constexpr qint64 limit = 64 * 1024;
+            const QByteArray content = file.read(limit);
+
+            if (file.error() != QFileDevice::NoError) {
+                details["error"] = file.errorString();
+                return details;
+            }
+
+            details["kind"] = "text";
+            details["text"] = QString::fromUtf8(content);
+            details["truncated"] = !file.atEnd();
         }
-
-        constexpr qint64 limit = 64 * 1024;
-        const QByteArray content = file.read(limit);
-
-        if (file.error() != QFileDevice::NoError) {
-            details["error"] = file.errorString();
-            return details;
-        }
-
-        details["kind"] = "text";
-        details["text"] = QString::fromUtf8(content);
-        details["truncated"] = !file.atEnd();
     }
 
     return details;
@@ -477,4 +493,52 @@ QString ProjectController::saveTextFile(const QUrl &fileUrl,
 
     emit logMessage("File saved: " + details.value("path").toString());
     return {};
+}
+
+
+
+QVariantList ProjectController::quickOpenFiles() const
+{
+    if (m_activeProjectPath.isEmpty()) {
+        return {};
+    }
+
+    const QDir project(m_activeProjectPath);
+
+    if (!project.exists()) {
+        return {};
+    }
+
+    QVariantList results;
+    QStringList pendingFolders{project.absolutePath()};
+
+    while (!pendingFolders.isEmpty()) {
+        const QDir folder(pendingFolders.takeLast());
+        const auto entries = folder.entryInfoList(
+            QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks,
+            QDir::Name | QDir::IgnoreCase
+            );
+
+        for (const QFileInfo &entry : entries) {
+            if (entry.isDir()) {
+                if (entry.fileName() != "node_modules") {
+                    pendingFolders.append(entry.absoluteFilePath());
+                }
+                continue;
+            }
+
+            if (entry.size() > 64 * 1024
+                || !isEditableTextFile(entry.suffix())) {
+                continue;
+            }
+
+            results.append(QVariantMap{
+                {"name", entry.fileName()},
+                {"path", project.relativeFilePath(entry.absoluteFilePath())},
+                {"url", QUrl::fromLocalFile(entry.absoluteFilePath())}
+            });
+        }
+    }
+
+    return results;
 }

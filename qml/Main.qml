@@ -45,6 +45,24 @@ ApplicationWindow {
         close.accepted = window.canLeaveProject()
     }
 
+    Shortcut {
+        sequence: "Ctrl+P"
+        enabled: projectController.activeProjectPath !== "" && !quickOpen.visible
+        onActivated: quickOpen.open()
+    }
+
+    QuickOpenDialog {
+        id: quickOpen
+        parent: Overlay.overlay
+        controller: projectController
+
+        onFileChosen: function(file) {
+            window.selectedFileUrl = file
+            window.selectedFileDetails = projectController.inspectFile(file)
+            workspace.editorWorkspace.openFile(file)
+        }
+    }
+
     background: Rectangle {
         radius: window.maximized ? 0 : 16
         border.width: window.maximized ? 0 : 1

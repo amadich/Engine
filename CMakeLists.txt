@@ -24,6 +24,16 @@ qt_add_resources(appJeridiEngine component_templates
         assets/icons/folder.svg
         assets/icons/file.svg
         assets/icons/image.svg
+        assets/icons/forest.svg
+        assets/icons/save.svg
+        assets/icons/close.svg
+        assets/icons/copy.svg
+        assets/icons/cut.svg
+        assets/icons/paste.svg
+        assets/icons/redo.svg
+        assets/icons/undo.svg
+        assets/icons/trash.svg
+        assets/icons/select-all.svg
         assets/logos/engine_logo.svg
         assets/logos/engine_logo_blue.svg
         assets/logos/engine_logo_green.svg
@@ -45,6 +55,8 @@ set(engine_qml_files
     qml/theme/Theme.qml
     qml/dialogs/PreferencesDialog.qml
     qml/panels/EditorWorkspace.qml
+    qml/dialogs/QuickOpenDialog.qml
+    qml/panels/EditorContextMenu.qml
 )
 
 # Keep one QML module while organizing source files into folders.
