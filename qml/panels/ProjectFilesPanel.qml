@@ -1,92 +1,146 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt.labs.folderlistmodel
+import JeridiEngine
 
 Rectangle {
     id: root
 
     property url projectFolder: ""
-    property url currentFolder: projectFolder
     property url selectedFile: ""
+    property string projectName: ""
 
     signal fileSelected(url file)
 
-    onProjectFolderChanged: currentFolder = projectFolder
-
     color: "#111827"
 
-    FolderListModel {
-        id: files
+    Component {
+        id: filesTree
 
-        folder: root.currentFolder
-        rootFolder: root.projectFolder
-        showDirsFirst: true
-        showDotAndDotDot: false
-        showHidden: false
+        TreeView {
+            id: tree
+
+            clip: true
+            reuseItems: false
+            boundsBehavior: Flickable.StopAtBounds
+            editTriggers: TableView.NoEditTriggers
+
+            model: ProjectFilesModel {
+                id: projectFiles
+            }
+
+            Component.onCompleted: {
+                rootIndex = projectFiles.openFolder(root.projectFolder)
+            }
+
+            columnWidthProvider: function(column) {
+                return column === 0 ? width : 0
+            }
+
+            ScrollBar.vertical: ScrollBar {}
+
+            delegate: Rectangle {
+                id: entry
+
+                required property int row
+                required property int depth
+                required property bool expanded
+                required property bool hasChildren
+                required property string display
+
+                readonly property var fileIndex: tree.index(row, 0)
+                readonly property url itemUrl: projectFiles.fileUrl(fileIndex)
+                readonly property bool folder: projectFiles.isFolder(fileIndex)
+                readonly property bool imageFile: !folder
+                    && /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(display)
+
+                implicitWidth: tree.width
+                implicitHeight: 26
+
+                color: entry.itemUrl.toString() === root.selectedFile.toString()
+                       && entry.itemUrl.toString() !== ""
+                       ? "#243850"
+                       : rowHover.hovered ? "#1E293B" : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 6 + entry.depth * 14
+                    anchors.rightMargin: 10
+                    spacing: 6
+
+                    Label {
+                        Layout.preferredWidth: 11
+                        text: entry.folder && entry.hasChildren
+                              ? (entry.expanded ? "▾" : "▸") : ""
+                        color: "#94A3B8"
+                    }
+
+                    Image {
+                        Layout.preferredWidth: 15
+                        Layout.preferredHeight: 15
+                        source: "qrc:/engine/assets/icons/"
+                                + (entry.folder ? "folder.svg"
+                                   : entry.imageFile ? "image.svg" : "file.svg")
+                        sourceSize.width: 30
+                        sourceSize.height: 30
+                        fillMode: Image.PreserveAspectFit
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: entry.display
+                        font.pixelSize: 13
+                        color: "#E2E8F0"
+                        elide: Text.ElideRight
+                    }
+                }
+
+                HoverHandler { id: rowHover }
+
+                TapHandler {
+                    onTapped: {
+                        if (entry.folder) {
+                            tree.toggleExpanded(entry.row)
+                        } else if (entry.itemUrl.toString() !== "") {
+                            root.fileSelected(entry.itemUrl)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Recreate the tree when switching projects to reset expansion state.
+    onProjectFolderChanged: {
+        treeLoader.sourceComponent = null
+
+        if (projectFolder.toString() !== "") {
+            treeLoader.sourceComponent = filesTree
+        }
     }
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 12
-        spacing: 8
+        spacing: 6
 
-        RowLayout {
-            Layout.fillWidth: true
-
-            Label {
-                Layout.fillWidth: true
-                text: "PROJECT FILES"
-                color: "#38BDF8"
-                font.bold: true
-            }
-
-            Button {
-                text: "Up"
-                enabled: root.currentFolder.toString()
-                         !== root.projectFolder.toString()
-                         && files.parentFolder.toString() !== ""
-                onClicked: root.currentFolder = files.parentFolder
-            }
+        Label {
+            text: "PROJECT FILES"
+            color: "#38BDF8"
+            font.bold: true
         }
 
         Label {
             Layout.fillWidth: true
-            text: root.currentFolder.toString() || "Open a project"
+            text: root.projectName || "Open a project"
             color: "#94A3B8"
-            elide: Text.ElideMiddle
+            elide: Text.ElideRight
         }
 
-        ListView {
-            id: fileList
-
+        Loader {
+            id: treeLoader
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-
-            model: root.projectFolder.toString() === "" ? null : files
-            ScrollBar.vertical: ScrollBar {}
-
-            delegate: ItemDelegate {
-                required property string fileName
-                required property bool fileIsDir
-                required property url fileUrl
-
-                width: fileList.width
-                visible: !(fileIsDir && fileName === "node_modules")
-                height: visible ? implicitHeight : 0
-
-                text: fileIsDir ? fileName + "/" : fileName
-                highlighted: fileUrl.toString() === root.selectedFile.toString()
-
-                onClicked: {
-                    if (fileIsDir) {
-                        root.currentFolder = fileUrl
-                    } else {
-                        root.fileSelected(fileUrl)
-                    }
-                }
-            }
         }
     }
 }

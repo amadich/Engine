@@ -20,6 +20,9 @@ qt_add_resources(appJeridiEngine component_templates
     PREFIX "/engine"
     FILES
         assets/icons/cube.svg
+        assets/icons/folder.svg
+        assets/icons/file.svg
+        assets/icons/image.svg
 )
 
 set(engine_qml_files
@@ -50,7 +53,8 @@ qt_add_qml_module(appJeridiEngine
         src/application/projectcontroller.h
         src/application/projectcontroller.cpp
         src/infrastructure/processrunner.h
-        src/infrastructure/processrunner.cpp 
+        src/infrastructure/processrunner.cpp
+        src/infrastructure/projectfilesmodel.h
 )
 
 target_include_directories(appJeridiEngine PRIVATE

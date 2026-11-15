@@ -99,6 +99,7 @@ ApplicationWindow {
                 SplitView.minimumWidth: 220
 
                 projectFolder: projectController.projectFolderUrl
+                projectName: projectController.activeProjectName
                 selectedFile: window.selectedFileUrl
 
                 onFileSelected: function(file) {
