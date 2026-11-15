@@ -12,7 +12,7 @@ Rectangle {
 
     signal fileSelected(url file)
 
-    color: "#111827"
+    color: Theme.colors.panel
     visible: engineToolbar.showProjectFiles
     SplitView.fillWidth: !engineToolbar.showOutput
 
@@ -59,10 +59,10 @@ Rectangle {
                 implicitWidth: tree.width
                 implicitHeight: 26
 
-                color: entry.itemUrl.toString() === root.selectedFile.toString()
-                       && entry.itemUrl.toString() !== ""
-                       ? "#243850"
-                       : rowHover.hovered ? "#1E293B" : "transparent"
+                color: entry.itemUrl.toString() !== ""
+                       && entry.itemUrl.toString() === root.selectedFile.toString()
+                       ? Theme.colors.selection
+                       : rowHover.hovered ? Theme.colors.hover : "transparent"
 
                 RowLayout {
                     anchors.fill: parent
@@ -74,7 +74,7 @@ Rectangle {
                         Layout.preferredWidth: 11
                         text: entry.folder && entry.hasChildren
                               ? (entry.expanded ? "▾" : "▸") : ""
-                        color: "#94A3B8"
+                        color: Theme.colors.text
                     }
 
                     Image {
@@ -92,7 +92,7 @@ Rectangle {
                         Layout.fillWidth: true
                         text: entry.display
                         font.pixelSize: 13
-                        color: "#E2E8F0"
+                        color: Theme.colors.text
                         elide: Text.ElideRight
                     }
                 }
@@ -128,14 +128,14 @@ Rectangle {
 
         Label {
             text: "PROJECT FILES"
-            color: "#38BDF8"
+            color: Theme.colors.accent
             font.bold: true
         }
 
         Label {
             Layout.fillWidth: true
             text: root.projectName || "Open a project"
-            color: "#94A3B8"
+            color: Theme.colors.muted
             elide: Text.ElideRight
         }
 

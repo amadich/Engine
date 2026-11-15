@@ -9,7 +9,7 @@ Rectangle {
     property bool canAddComponent: false
     signal addButtonRequested()
 
-    color: "#111827"
+    color: Theme.colors.surface
 
     ColumnLayout {
         anchors.fill: parent
@@ -18,7 +18,7 @@ Rectangle {
 
         Label {
             text: "COMPONENT LIBRARY"
-            color: "#E2E8F0"
+            color: Theme.colors.text
             font.bold: true
         }
 
@@ -70,8 +70,8 @@ Rectangle {
                 implicitHeight: 30
                 implicitWidth: libraryTree.width
 
-                color: rowTap.pressed ? "#334155"
-                     : rowHover.hovered && canActivate ? "#1E293B"
+                color: rowTap.pressed ? Theme.colors.selection
+                     : rowHover.hovered && entry.canActivate ? Theme.colors.hover
                      : "transparent"
 
                 RowLayout {
@@ -90,7 +90,7 @@ Rectangle {
                         Layout.preferredWidth: 16
                         Layout.preferredHeight: 16
 
-                        source: "qrc:/engine/assets/icons/cube.svg"
+                        source: "qrc:/engine/assets/icons/cube_blue.svg"
                         sourceSize.width: 24
                         sourceSize.height: 24
                         fillMode: Image.PreserveAspectFit
@@ -102,7 +102,7 @@ Rectangle {
                         text: entry.display
                         elide: Text.ElideRight
                         font.bold: entry.hasChildren
-                        color: entry.canActivate ? "#E2E8F0" : "#64748B"
+                        color: entry.canActivate ? Theme.colors.text : Theme.colors.disabled
                     }
                 }
 

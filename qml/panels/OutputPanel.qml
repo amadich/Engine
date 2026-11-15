@@ -4,7 +4,7 @@ import QtQuick.Layouts
 
 Rectangle {
     id: root
-    color: "#0F172A"
+    color: Theme.colors.surface
     visible: engineToolbar.showOutput
 
     function appendLog(message) {
@@ -41,8 +41,8 @@ Rectangle {
                 selectByMouse: true
                 textFormat: TextEdit.PlainText
                 text: "Jeridi Engine ready.\n"
-                color: "#CBD5E1"
-                font.family: "monospace"
+                color: Theme.colors.text
+                font.family: "Menlo"
                 wrapMode: TextEdit.Wrap
 
                 background: Rectangle {

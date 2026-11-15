@@ -20,12 +20,14 @@ qt_add_resources(appJeridiEngine component_templates
     PREFIX "/engine"
     FILES
         assets/icons/cube.svg
+        assets/icons/cube_blue.svg
         assets/icons/folder.svg
         assets/icons/file.svg
         assets/icons/image.svg
         assets/logos/engine_logo.svg
         assets/logos/engine_logo_blue.svg
         assets/logos/engine_logo_green.svg
+        assets/logos/engine_logo_orange.svg
 )
 
 set(engine_qml_files
@@ -38,6 +40,10 @@ set(engine_qml_files
     qml/panels/OutputPanel.qml
     qml/panels/ProjectFilesPanel.qml
     qml/dialogs/CreateProjectDialog.qml
+    qml/theme/DarkTheme.qml
+    qml/theme/LightTheme.qml
+    qml/theme/Theme.qml
+    qml/dialogs/PreferencesDialog.qml
 )
 
 # Keep one QML module while organizing source files into folders.
@@ -47,6 +53,10 @@ foreach(qml_file IN LISTS engine_qml_files)
         QT_RESOURCE_ALIAS "${qml_name}"
     )
 endforeach()
+
+set_source_files_properties(qml/theme/Theme.qml PROPERTIES
+    QT_QML_SINGLETON_TYPE TRUE
+)
 
 qt_add_qml_module(appJeridiEngine
     URI JeridiEngine

@@ -7,7 +7,7 @@ Rectangle {
 
     property var fileDetails: ({})
 
-    color: "#111827"
+    color: Theme.colors.surface
 
     ColumnLayout {
         anchors.fill: parent
@@ -16,7 +16,7 @@ Rectangle {
 
         Label {
             text: "INSPECTOR"
-            color: "#E2E8F0"
+            color: Theme.colors.text
             font.bold: true
         }
 
@@ -89,8 +89,8 @@ Rectangle {
                 selectByMouse: true
                 textFormat: TextEdit.PlainText
                 wrapMode: TextEdit.Wrap
-                font.family: "monospace"
-                color: "#CBD5E1"
+                font.family: "Menlo"
+                color: Theme.colors.text
                 text: root.fileDetails.text || ""
             }
         }

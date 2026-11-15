@@ -8,13 +8,13 @@ Rectangle {
     property url previewUrl: ""
     property bool devServerActive: false
 
-    color: "#0B1120"
+    color: Theme.colors.surface
 
     Label {
         anchors.centerIn: parent
         visible: !previewLoader.active
         text: root.devServerActive ? "Waiting for Vite…" : "Project preview"
-        color: "#64748B"
+        color: Theme.colors.text
         font.pixelSize: 24
     }
 

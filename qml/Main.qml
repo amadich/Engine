@@ -6,8 +6,8 @@ import QtQuick.Dialogs
 ApplicationWindow {
     id: window
 
-    width: 1400
-    height: 900
+    width: 1200
+    height: 800
     minimumWidth: 1000
     minimumHeight: 650
     visible: true
@@ -19,11 +19,28 @@ ApplicationWindow {
     property url selectedFileUrl: ""
     property var selectedFileDetails: ({})
 
+
+    palette.window: Theme.colors.window
+    palette.windowText: Theme.colors.text
+    palette.base: Theme.colors.surface
+    palette.alternateBase: Theme.colors.panel
+    palette.text: Theme.colors.text
+    palette.button: Theme.colors.control
+    palette.buttonText: Theme.colors.text
+    palette.placeholderText: Theme.colors.muted
+    palette.highlight: Theme.colors.selection
+    palette.highlightedText: Theme.colors.text
+
     background: Rectangle {
         radius: window.maximized ? 0 : 16
-        color: "#111827"
         border.width: window.maximized ? 0 : 1
-        border.color: "#344256"
+        color: Theme.colors.window
+        border.color: Theme.colors.border
+    }
+
+    PreferencesDialog {
+        id: preferencesDialog
+        parent: Overlay.overlay
     }
 
 
@@ -66,6 +83,8 @@ ApplicationWindow {
 
         onRunRequested: projectController.startDevServer()
         onStopRequested: projectController.stopDevServer()
+
+        onPreferencesRequested: preferencesDialog.open()
     }
 
     CreateProjectDialog {
@@ -112,6 +131,8 @@ ApplicationWindow {
             ProjectFilesPanel {
                 SplitView.preferredWidth: 340
                 SplitView.minimumWidth: 220
+                visible: engineToolbar.showProjectFiles
+                SplitView.fillWidth: !engineToolbar.showOutput
 
                 projectFolder: projectController.projectFolderUrl
                 projectName: projectController.activeProjectName
