@@ -44,6 +44,7 @@ set(engine_qml_files
     qml/theme/LightTheme.qml
     qml/theme/Theme.qml
     qml/dialogs/PreferencesDialog.qml
+    qml/panels/EditorWorkspace.qml
 )
 
 # Keep one QML module while organizing source files into folders.

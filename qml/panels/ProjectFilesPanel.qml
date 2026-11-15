@@ -11,6 +11,7 @@ Rectangle {
     property string projectName: ""
 
     signal fileSelected(url file)
+    signal fileOpenRequested(url file)
 
     color: Theme.colors.panel
     visible: engineToolbar.showProjectFiles
@@ -106,6 +107,10 @@ Rectangle {
                         } else if (entry.itemUrl.toString() !== "") {
                             root.fileSelected(entry.itemUrl)
                         }
+                    }
+                    onDoubleTapped: {
+                        if (!entry.folder && entry.itemUrl.toString() !== "")
+                            root.fileOpenRequested(entry.itemUrl)
                     }
                 }
             }

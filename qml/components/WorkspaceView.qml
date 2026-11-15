@@ -12,6 +12,9 @@ SplitView {
 
     property var selectedFileDetails: ({})
 
+    required property ProjectController controller
+    property alias editorWorkspace: editorWorkspace
+
     orientation: Qt.Horizontal
 
     ComponentLibraryPanel {
@@ -22,12 +25,23 @@ SplitView {
         onAddButtonRequested: root.addButtonRequested()
     }
 
-    PreviewPanel {
+    EditorWorkspace {
+        id: editorWorkspace
+
         SplitView.fillWidth: true
         SplitView.minimumWidth: 360
+
+        controller: root.controller
         previewUrl: root.previewUrl
         devServerActive: root.devServerActive
     }
+
+    // PreviewPanel {
+    //     SplitView.fillWidth: true
+    //     SplitView.minimumWidth: 360
+    //     previewUrl: root.previewUrl
+    //     devServerActive: root.devServerActive
+    // }
 
     InspectorPanel {
         SplitView.preferredWidth: 280

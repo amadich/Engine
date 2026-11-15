@@ -31,6 +31,20 @@ ApplicationWindow {
     palette.highlight: Theme.colors.selection
     palette.highlightedText: Theme.colors.text
 
+
+    function canLeaveProject() {
+        if (!workspace.editorWorkspace.hasUnsavedChanges)
+            return true
+
+        workspace.editorWorkspace.statusMessage =
+            "Save your open files before switching projects or closing."
+        return false
+    }
+
+    onClosing: function(close) {
+        close.accepted = window.canLeaveProject()
+    }
+
     background: Rectangle {
         radius: window.maximized ? 0 : 16
         border.width: window.maximized ? 0 : 1
@@ -50,6 +64,7 @@ ApplicationWindow {
         function onActiveProjectChanged() {
             window.selectedFileUrl = ""
             window.selectedFileDetails = ({})
+            workspace.editorWorkspace.reset()
         }
     }
 
@@ -72,11 +87,17 @@ ApplicationWindow {
         projectPath: projectController.activeProjectPath
         busy: projectController.busy
 
-        onCreateProjectRequested: createProjectDialog.open()
+        onCreateProjectRequested: {
+            if (window.canLeaveProject())
+                createProjectDialog.open()
+        }
         onCheckNpmRequested: projectController.checkNpm()
         onGenerateReactRequested: projectController.generateReact()
 
-        onOpenProjectRequested: openProjectDialog.open()
+        onOpenProjectRequested: {
+            if (window.canLeaveProject())
+                openProjectDialog.open()
+        }
         onInstallDependenciesRequested: projectController.installDependencies()
 
         devServerActive: projectController.devServerActive
@@ -107,6 +128,9 @@ ApplicationWindow {
         anchors.topMargin: 0
 
         WorkspaceView {
+            id: workspace
+            controller: projectController
+
             SplitView.fillHeight: true
             SplitView.minimumHeight: 300
             previewUrl: projectController.previewUrl
@@ -141,6 +165,10 @@ ApplicationWindow {
                 onFileSelected: function(file) {
                     window.selectedFileUrl = file
                     window.selectedFileDetails = projectController.inspectFile(file)
+                }
+
+                onFileOpenRequested: function(file) {
+                    workspace.editorWorkspace.openFile(file)
                 }
             }
 

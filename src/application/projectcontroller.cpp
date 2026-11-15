@@ -424,3 +424,57 @@ QVariantMap ProjectController::inspectFile(const QUrl &fileUrl) const
 
     return details;
 }
+
+
+
+
+
+QString ProjectController::saveTextFile(const QUrl &fileUrl,
+                                        const QString &originalText,
+                                        const QString &newText)
+{
+    if (busy() && !devServerActive()) {
+        return QStringLiteral("Wait for the current command to finish.");
+    }
+
+    const QVariantMap details = inspectFile(fileUrl);
+    const QString error = details.value("error").toString();
+
+    if (!error.isEmpty()) {
+        return error;
+    }
+
+    if (details.value("kind").toString() != "text"
+        || details.value("truncated").toBool()) {
+        return QStringLiteral("This file cannot be edited here.");
+    }
+
+    if (details.value("text").toString() != originalText) {
+        return QStringLiteral(
+            "The file changed on disk. Keep a copy of your edits and reopen it."
+            );
+    }
+
+    const QByteArray bytes = newText.toUtf8();
+
+    if (bytes.size() > 64 * 1024) {
+        return QStringLiteral("The editor supports files up to 64 KiB.");
+    }
+
+    const QString path = QFileInfo(fileUrl.toLocalFile()).canonicalFilePath();
+
+    if (path.isEmpty()) {
+        return QStringLiteral("The file is no longer available.");
+    }
+
+    QSaveFile file(path);
+
+    if (!file.open(QIODevice::WriteOnly)
+        || file.write(bytes) != bytes.size()
+        || !file.commit()) {
+        return file.errorString();
+    }
+
+    emit logMessage("File saved: " + details.value("path").toString());
+    return {};
+}

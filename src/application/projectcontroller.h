@@ -49,6 +49,10 @@ public:
     Q_INVOKABLE void addButtonComponent();
     Q_INVOKABLE QVariantMap inspectFile(const QUrl &fileUrl) const;
 
+    Q_INVOKABLE QString saveTextFile(const QUrl &fileUrl,
+                                     const QString &originalText,
+                                     const QString &newText);
+
 signals:
     void activeProjectChanged();
     void busyChanged();
