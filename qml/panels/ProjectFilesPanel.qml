@@ -13,6 +13,8 @@ Rectangle {
     signal fileSelected(url file)
 
     color: "#111827"
+    visible: engineToolbar.showProjectFiles
+    SplitView.fillWidth: !engineToolbar.showOutput
 
     Component {
         id: filesTree

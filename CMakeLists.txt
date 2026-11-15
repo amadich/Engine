@@ -23,6 +23,9 @@ qt_add_resources(appJeridiEngine component_templates
         assets/icons/folder.svg
         assets/icons/file.svg
         assets/icons/image.svg
+        assets/logos/engine_logo.svg
+        assets/logos/engine_logo_blue.svg
+        assets/logos/engine_logo_green.svg
 )
 
 set(engine_qml_files

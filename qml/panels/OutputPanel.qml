@@ -5,6 +5,7 @@ import QtQuick.Layouts
 Rectangle {
     id: root
     color: "#0F172A"
+    visible: engineToolbar.showOutput
 
     function appendLog(message) {
         const needsNewLine = outputArea.length > 0

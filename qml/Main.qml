@@ -12,10 +12,21 @@ ApplicationWindow {
     minimumHeight: 650
     visible: true
     title: "Jeridi Engine"
-    color: "#0B1120"
+    flags: Qt.Window | Qt.FramelessWindowHint
+    color: "transparent"
 
+    readonly property bool maximized: visibility === Window.Maximized
     property url selectedFileUrl: ""
     property var selectedFileDetails: ({})
+
+    background: Rectangle {
+        radius: window.maximized ? 0 : 16
+        color: "#111827"
+        border.width: window.maximized ? 0 : 1
+        border.color: "#344256"
+    }
+
+
 
     ProjectController {
         id: projectController
@@ -38,6 +49,8 @@ ApplicationWindow {
     }
 
     header: EngineToolbar {
+        id: engineToolbar
+        hostWindow: window
         projectName: projectController.activeProjectName
         projectPath: projectController.activeProjectPath
         busy: projectController.busy
@@ -71,6 +84,8 @@ ApplicationWindow {
     SplitView {
         anchors.fill: parent
         orientation: Qt.Vertical
+        anchors.margins: window.maximized ? 0 : 8
+        anchors.topMargin: 0
 
         WorkspaceView {
             SplitView.fillHeight: true
@@ -114,6 +129,18 @@ ApplicationWindow {
                 SplitView.fillWidth: true
                 SplitView.minimumWidth: 240
             }
+        }
+
+        MouseArea {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            width: 14
+            height: 14
+            z: 10
+            visible: !window.maximized
+            cursorShape: Qt.SizeFDiagCursor
+
+            onPressed: window.startSystemResize(Qt.BottomEdge | Qt.RightEdge)
         }
     }
 }

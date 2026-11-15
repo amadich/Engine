@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     QtWebView::initialize();
 
     QQuickStyle::setStyle("Basic");
+    QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
     QGuiApplication app(argc, argv);
     QQmlApplicationEngine engine;
 
