@@ -17,6 +17,9 @@ qt_add_resources(appJeridiEngine component_templates
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/templates"
     FILES
         templates/react/engine-button/EngineButton.tsx
+    PREFIX "/engine"
+    FILES
+        assets/icons/cube.svg
 )
 
 set(engine_qml_files

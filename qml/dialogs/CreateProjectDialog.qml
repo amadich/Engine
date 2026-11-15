@@ -9,63 +9,148 @@ Dialog {
 
     required property ProjectController controller
 
-    title: "Create Project"
+    readonly property bool usesReactVite:
+        frontendBox.currentValue === "react-vite"
+    readonly property bool emptyProject:
+        frontendBox.currentValue === "none"
+
+    readonly property bool supportedStack:
+        (usesReactVite || emptyProject)
+        && backendBox.currentValue === "none"
+        && architectureBox.currentValue === "default"
+
+    title: "New Project"
     modal: true
-    width: 460
     anchors.centerIn: parent
+    width: Math.min(640, parent.width - 32)
+    padding: 20
+
+    onOpened: projectNameInput.forceActiveFocus()
 
     FolderDialog {
-        id: parentFolderDialog
-        title: "Choose where to create your project"
+        id: folderPicker
+        title: "Choose a parent folder"
     }
 
     contentItem: ColumnLayout {
-        spacing: 16
+        spacing: 14
 
         Label {
-            text: "Project name"
+            text: "PROJECT"
+            font.bold: true
         }
 
         TextField {
             id: projectNameInput
             Layout.fillWidth: true
-            placeholderText: "my-website"
-        }
-
-        Label {
-            text: "Parent folder"
+            placeholderText: "Project name, e.g. my-website"
+            Accessible.name: "Project name"
         }
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
 
             Label {
                 Layout.fillWidth: true
-                text: parentFolderDialog.selectedFolder.toString() === ""
-                      ? "Choose a folder"
-                      : parentFolderDialog.selectedFolder.toString()
+                text: folderPicker.selectedFolder.toString()
+                      || "Choose where to create the project"
                 elide: Text.ElideMiddle
             }
 
             Button {
-                text: "Browse"
-                onClicked: parentFolderDialog.open()
+                text: "Browse…"
+                onClicked: folderPicker.open()
             }
         }
 
         Label {
+            text: "STACK"
+            font.bold: true
+        }
+
+        GridLayout {
             Layout.fillWidth: true
-            text: "A new folder will be created inside the selected folder."
+            columns: 2
+            columnSpacing: 12
+            rowSpacing: 8
+
+            Label { text: "Frontend" }
+
+            ComboBox {
+                id: frontendBox
+                Layout.fillWidth: true
+                Accessible.name: "Frontend"
+                textRole: "label"
+                valueRole: "key"
+
+                model: [
+                    { label: "React + Vite + TypeScript", key: "react-vite" },
+                    { label: "Next.js", key: "next" },
+                    { label: "Angular", key: "angular" },
+                    { label: "None", key: "none" }
+                ]
+            }
+
+            Label { text: "Backend" }
+
+            ComboBox {
+                id: backendBox
+                Layout.fillWidth: true
+                Accessible.name: "Backend"
+                textRole: "label"
+                valueRole: "key"
+
+                model: [
+                    { label: "None", key: "none" },
+                    { label: "Node.js + Express", key: "express" },
+                    { label: "Apollo Server + Express", key: "apollo-express" },
+                    { label: "NestJS", key: "nestjs" },
+                    { label: "Spring Boot", key: "spring-boot" }
+                ]
+            }
+        }
+
+        Label {
+            text: "ARCHITECTURE"
+            font.bold: true
+        }
+
+        ComboBox {
+            id: architectureBox
+            Layout.fillWidth: true
+            Accessible.name: "Architecture"
+            textRole: "label"
+            valueRole: "key"
+
+            model: [
+                { label: "Default project layout", key: "default" },
+                { label: "Feature-based", key: "feature-based" },
+                { label: "Layered", key: "layered" },
+                { label: "Full-stack workspace", key: "full-stack" }
+            ]
+        }
+
+        Label {
+            Layout.fillWidth: true
             wrapMode: Text.WordWrap
+
+            text: {
+                if (!root.supportedStack) {
+                    return "A generator is not available for this combination yet."
+                }
+
+                if (root.emptyProject) {
+                    return "Creates an empty project folder."
+                }
+
+                return "Creates a Vite project with src/, public/, and package.json."
+            }
         }
 
         RowLayout {
             Layout.fillWidth: true
 
-            Item {
-                Layout.fillWidth: true
-            }
+            Item { Layout.fillWidth: true }
 
             Button {
                 text: "Cancel"
@@ -74,19 +159,23 @@ Dialog {
 
             Button {
                 text: "Create"
-                enabled: !root.controller.busy
+                enabled: root.supportedStack
+                         && !root.controller.busy
                          && projectNameInput.text.trim().length > 0
-                         && parentFolderDialog.selectedFolder.toString() !== ""
+                         && folderPicker.selectedFolder.toString() !== ""
 
                 onClicked: {
-                    const success = root.controller.createProject(
-                        projectNameInput.text,
-                        parentFolderDialog.selectedFolder
-                    )
-
-                    if (success) {
-                        root.close()
+                    if (!root.controller.createProject(
+                            projectNameInput.text,
+                            folderPicker.selectedFolder)) {
+                        return
                     }
+
+                    if (root.usesReactVite) {
+                        root.controller.generateReact()
+                    }
+
+                    root.close()
                 }
             }
         }

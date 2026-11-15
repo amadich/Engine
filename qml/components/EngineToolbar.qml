@@ -55,33 +55,45 @@ ToolBar {
         }
 
         Button {
-            text: "Create Project"
+            text: "New Project…"
             enabled: !root.busy
             onClicked: root.createProjectRequested()
         }
 
         Button {
-            text: "Open Project"
+            text: "Open…"
             enabled: !root.busy
             onClicked: root.openProjectRequested()
         }
 
         Button {
-            text: root.busy ? "Running..." : "Check npm"
-            enabled: !root.busy
-            onClicked: root.checkNpmRequested()
-        }
+            id: toolsButton
 
-        Button {
-            text: "Generate React"
-            enabled: root.projectPath !== "" && !root.busy
-            onClicked: root.generateReactRequested()
-        }
+            text: "Tools ▾"
+            onClicked: toolsMenu.open()
 
-        Button {
-            text: "Install Dependencies"
-            enabled: root.projectPath !== "" && !root.busy
-            onClicked: root.installDependenciesRequested()
+            Menu {
+                id: toolsMenu
+                y: toolsButton.height
+
+                MenuItem {
+                    text: "Check npm"
+                    enabled: !root.busy
+                    onTriggered: root.checkNpmRequested()
+                }
+
+                MenuItem {
+                    text: "Generate React"
+                    enabled: root.projectPath !== "" && !root.busy
+                    onTriggered: root.generateReactRequested()
+                }
+
+                MenuItem {
+                    text: "Install Dependencies"
+                    enabled: root.projectPath !== "" && !root.busy
+                    onTriggered: root.installDependenciesRequested()
+                }
+            }
         }
 
         Button {
