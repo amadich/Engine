@@ -81,11 +81,13 @@ qt_add_qml_module(appJeridiEngine
         src/infrastructure/processrunner.h
         src/infrastructure/processrunner.cpp
         src/infrastructure/projectfilesmodel.h
+        SOURCES src/editor/codesyntaxhighlighter.h src/editor/codesyntaxhighlighter.cpp
 )
 
 target_include_directories(appJeridiEngine PRIVATE
-    src/application
-    src/infrastructure
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/application"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/infrastructure"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/editor"
 )
 
 target_link_libraries(appJeridiEngine PRIVATE

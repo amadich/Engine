@@ -50,6 +50,27 @@ Rectangle {
         id: documents
     }
 
+
+    CodeSyntaxHighlighter {
+        id: syntaxHighlighter
+    }
+
+    function updateSyntaxHighlighting() {
+        const fileName = root.activeTab < 0
+                         ? ""
+                         : documents.get(root.activeTab).name
+
+        syntaxHighlighter.configure(editor.textDocument, fileName, Theme.dark)
+    }
+
+    Connections {
+        target: Theme
+
+        function onDarkChanged() {
+            root.updateSyntaxHighlighting()
+        }
+    }
+
     // --------------------------------------------------
     // FILE HELPERS
     // --------------------------------------------------
@@ -122,6 +143,7 @@ Rectangle {
         statusMessage = ""
 
         loadingBuffer = false
+        root.updateSyntaxHighlighting()
 
         if (index >= 0)
             editor.forceActiveFocus()
