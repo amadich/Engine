@@ -57,6 +57,11 @@ set(engine_qml_files
     qml/panels/EditorWorkspace.qml
     qml/dialogs/QuickOpenDialog.qml
     qml/panels/EditorContextMenu.qml
+
+    qml/panels/EditorTabBar.qml
+    qml/panels/CodeEditorPane.qml
+    qml/panels/CompletionList.qml
+    qml/panels/EditorEditing.js
 )
 
 # Keep one QML module while organizing source files into folders.

@@ -1,4 +1,3 @@
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -21,19 +20,19 @@ Rectangle {
 
     readonly property bool currentDirty:
         activeTab >= 0
-        && activeTab < documents.count
-        && documents.get(activeTab).dirty
+        && activeTab < documentModel.count
+        && documentModel.get(activeTab).dirty
 
     readonly property string currentPath:
         activeTab >= 0
-        && activeTab < documents.count
-        ? documents.get(activeTab).relativePath
+        && activeTab < documentModel.count
+        ? documentModel.get(activeTab).relativePath
         : ""
 
     readonly property string currentName:
         activeTab >= 0
-        && activeTab < documents.count
-        ? documents.get(activeTab).name
+        && activeTab < documentModel.count
+        ? documentModel.get(activeTab).name
         : ""
 
     // Editor colors
@@ -47,7 +46,7 @@ Rectangle {
     color: Theme.colors.canvas
 
     ListModel {
-        id: documents
+        id: documentModel
     }
 
 
@@ -58,7 +57,7 @@ Rectangle {
     function updateSyntaxHighlighting() {
         const fileName = root.activeTab < 0
                          ? ""
-                         : documents.get(root.activeTab).name
+                         : documentModel.get(root.activeTab).name
 
         syntaxHighlighter.configure(editor.textDocument, fileName, Theme.dark)
     }
@@ -71,22 +70,8 @@ Rectangle {
         }
     }
 
-    // --------------------------------------------------
     // FILE HELPERS
-    // --------------------------------------------------
 
-    function fileIcon(fileName) {
-        const name = fileName.toLowerCase()
-
-        if (name.endsWith(".png") ||
-            name.endsWith(".jpg") ||
-            name.endsWith(".jpeg") ||
-            name.endsWith(".svg") ||
-            name.endsWith(".webp"))
-            return "image.svg"
-
-        return "file.svg"
-    }
 
     function fileType(fileName) {
         const name = fileName.toLowerCase()
@@ -124,12 +109,13 @@ Rectangle {
         return "Plain Text"
     }
 
-    // --------------------------------------------------
     // DOCUMENT MANAGEMENT
-    // --------------------------------------------------
+
 
     function selectTab(index) {
-        if (index < -1 || index >= documents.count)
+        editor.dismissCompletion()
+
+        if (index < -1 || index >= documentModel.count)
             return
 
         loadingBuffer = true
@@ -138,7 +124,7 @@ Rectangle {
 
         editor.text = index < 0
             ? ""
-            : documents.get(index).draft
+            : documentModel.get(index).draft
 
         statusMessage = ""
 
@@ -146,14 +132,14 @@ Rectangle {
         root.updateSyntaxHighlighting()
 
         if (index >= 0)
-            editor.forceActiveFocus()
+            editor.focusEditor()
     }
 
     function openFile(fileUrl) {
         const key = fileUrl.toString()
 
-        for (let i = 0; i < documents.count; ++i) {
-            if (documents.get(i).fileUrl === key) {
+        for (let i = 0; i < documentModel.count; ++i) {
+            if (documentModel.get(i).fileUrl === key) {
                 selectTab(i)
                 return
             }
@@ -171,7 +157,7 @@ Rectangle {
             return
         }
 
-        documents.append({
+        documentModel.append({
             fileUrl: key,
             name: details.name,
             relativePath: details.path,
@@ -180,15 +166,15 @@ Rectangle {
             dirty: false
         })
 
-        selectTab(documents.count - 1)
-        tabs.positionViewAtEnd()
+        selectTab(documentModel.count - 1)
+        tabBar.revealLastTab()
     }
 
     function saveCurrent() {
         if (activeTab < 0)
             return
 
-        const document = documents.get(activeTab)
+        const document = documentModel.get(activeTab)
 
         if (!document.dirty)
             return
@@ -204,13 +190,13 @@ Rectangle {
             return
         }
 
-        documents.setProperty(
+        documentModel.setProperty(
             activeTab,
             "original",
             document.draft
         )
 
-        documents.setProperty(
+        documentModel.setProperty(
             activeTab,
             "dirty",
             false
@@ -221,20 +207,20 @@ Rectangle {
     }
 
     function closeTab(index) {
-        if (index < 0 || index >= documents.count)
+        if (index < 0 || index >= documentModel.count)
             return
 
-        if (documents.get(index).dirty) {
+        if (documentModel.get(index).dirty) {
             statusMessage = "Save the file before closing its tab."
             return
         }
 
         const previous = activeTab
 
-        documents.remove(index)
+        documentModel.remove(index)
 
         if (previous === index) {
-            selectTab(Math.min(index, documents.count - 1))
+            selectTab(Math.min(index, documentModel.count - 1))
         } else if (previous > index) {
             activeTab = previous - 1
         }
@@ -242,14 +228,13 @@ Rectangle {
 
     function reset() {
         selectTab(-1)
-        documents.clear()
+        documentModel.clear()
         dirtyCount = 0
         statusMessage = ""
     }
 
-    // --------------------------------------------------
     // KEYBOARD SHORTCUTS
-    // --------------------------------------------------
+
 
     Shortcut {
         sequences: [StandardKey.Save]
@@ -257,345 +242,31 @@ Rectangle {
         onActivated: root.saveCurrent()
     }
 
-    // --------------------------------------------------
-    // MAIN LAYOUT
-    // --------------------------------------------------
-
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ==============================================
         // EDITOR TOOLBAR
-        // ==============================================
 
-        Rectangle {
-            id: editorToolbar
 
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-
-            color: root.toolbarColor
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-
-                spacing: 6
-
-                // --------------------------------------
-                // PREVIEW TAB
-                // --------------------------------------
-
-                Rectangle {
-                    id: previewTab
-
-                    Layout.preferredWidth: 110
-                    Layout.fillHeight: true
-
-                    color: root.activeTab === -1
-                        ? root.activeColor
-                        : "transparent"
-
-                    radius: 5
-
-                    Rectangle {
-                        anchors.top: parent.top
-                        width: parent.width
-                        height: 2
-
-                        color: root.activeTab === -1
-                            ? root.accentColor
-                            : "transparent"
-                    }
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 8
-
-                        Image {
-                            source: "qrc:/engine/assets/icons/forest.svg"
-
-                            Layout.preferredWidth: 17
-                            Layout.preferredHeight: 17
-
-                            sourceSize.width: 34
-                            sourceSize.height: 34
-
-                            fillMode: Image.PreserveAspectFit
-                        }
-
-                        Label {
-                            text: "Preview"
-                            color: Theme.colors.text
-                            font.pixelSize: 13
-                            font.weight: root.activeTab === -1
-                                ? Font.DemiBold
-                                : Font.Normal
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: root.selectTab(-1)
-                    }
-                }
-
-                // --------------------------------------
-                // OPEN FILE TABS
-                // --------------------------------------
-
-                ListView {
-                    id: tabs
-
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    orientation: ListView.Horizontal
-                    flickableDirection: Flickable.HorizontalFlick
-
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    clip: true
-                    spacing: 3
-
-                    model: documents
-
-                    onCountChanged: {
-                        if (count > 0)
-                            positionViewAtEnd()
-                    }
-
-                    delegate: Rectangle {
-                        id: tab
-
-                        required property int index
-                        required property string name
-                        required property string relativePath
-                        required property bool dirty
-
-                        readonly property bool selected:
-                            root.activeTab === index
-
-                        readonly property bool hovered:
-                            tabHover.hovered
-
-                        width: 190
-                        height: tabs.height
-
-                        radius: 5
-
-                        color: selected
-                            ? root.activeColor
-                            : hovered
-                                ? root.hoverColor
-                                : root.inactiveColor
-
-                        // Active indicator
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-
-                            height: 2
-
-                            color: tab.selected
-                                ? root.accentColor
-                                : "transparent"
-                        }
-
-                        HoverHandler {
-                            id: tabHover
-                        }
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 6
-
-                            spacing: 8
-
-                            // File icon
-                            Image {
-                                Layout.preferredWidth: 17
-                                Layout.preferredHeight: 17
-
-                                source: "qrc:/engine/assets/icons/"
-                                        + root.fileIcon(tab.name)
-
-                                sourceSize.width: 34
-                                sourceSize.height: 34
-
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            // File name
-                            Label {
-                                Layout.fillWidth: true
-
-                                text: tab.name
-
-                                color: tab.selected
-                                    ? Theme.colors.text
-                                    : root.mutedText
-
-                                font.pixelSize: 13
-
-                                font.weight: tab.selected
-                                    ? Font.DemiBold
-                                    : Font.Normal
-
-                                elide: Text.ElideMiddle
-
-                                verticalAlignment: Text.AlignVCenter
-                            }
-
-                            // Close / Dirty indicator
-                            ToolButton {
-                                id: closeButton
-
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
-
-                                hoverEnabled: true
-
-                                background: Rectangle {
-                                    radius: 5
-
-                                    color: closeButton.hovered
-                                        ? "#9E3D48"
-                                        : "transparent"
-                                }
-
-                                contentItem: Item {
-                                    Image {
-                                        anchors.centerIn: parent
-
-                                        width: 12
-                                        height: 12
-
-                                        source: "qrc:/engine/assets/icons/close.svg"
-
-                                        visible: !tab.dirty
-                                                 || closeButton.hovered
-
-                                        fillMode: Image.PreserveAspectFit
-                                    }
-
-                                    Rectangle {
-                                        anchors.centerIn: parent
-
-                                        width: 7
-                                        height: 7
-                                        radius: 4
-
-                                        color: root.accentColor
-
-                                        visible: tab.dirty
-                                                 && !closeButton.hovered
-                                    }
-                                }
-
-                                opacity: tab.selected
-                                         || tab.hovered
-                                         || tab.dirty
-                                         ? 1.0 : 0.0
-
-                                ToolTip.visible: hovered
-                                ToolTip.text: "Close " + tab.name
-
-                                onClicked: root.closeTab(tab.index)
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            z: -1
-
-                            cursorShape: Qt.PointingHandCursor
-
-                            onClicked: root.selectTab(tab.index)
-                        }
-
-                        TapHandler {
-                            acceptedButtons: Qt.LeftButton
-
-                            onTapped: root.selectTab(tab.index)
-                        }
-
-                        ToolTip.visible: tab.hovered
-                                         && !closeButton.hovered
-
-                        ToolTip.text: tab.relativePath
-                        ToolTip.delay: 700
-                    }
-                }
-
-                // --------------------------------------
-                // SAVE BUTTON
-                // --------------------------------------
-
-                Rectangle {
-                    Layout.preferredWidth: 86
-                    Layout.preferredHeight: 32
-
-                    radius: 6
-
-                    color: saveMouse.containsMouse
-                           && root.currentDirty
-                           ? root.hoverColor
-                           : "transparent"
-
-                    opacity: root.currentDirty ? 1.0 : 0.5
-
-                    RowLayout {
-                        anchors.centerIn: parent
-                        spacing: 7
-
-                        Image {
-                            source: "qrc:/engine/assets/icons/save.svg"
-
-                            Layout.preferredWidth: 16
-                            Layout.preferredHeight: 16
-
-                            sourceSize.width: 32
-                            sourceSize.height: 32
-
-                            fillMode: Image.PreserveAspectFit
-                        }
-
-                        Label {
-                            text: "Save"
-
-                            color: Theme.colors.text
-                            font.pixelSize: 13
-                        }
-                    }
-
-                    MouseArea {
-                        id: saveMouse
-
-                        anchors.fill: parent
-                        hoverEnabled: true
-
-                        enabled: root.currentDirty
-
-                        cursorShape: enabled
-                                     ? Qt.PointingHandCursor
-                                     : Qt.ArrowCursor
-
-                        onClicked: root.saveCurrent()
-                    }
-                }
-            }
+        EditorTabBar {
+            id: tabBar
+            documents: documentModel
+            activeTab: root.activeTab
+            currentDirty: root.currentDirty
+            toolbarColor: root.toolbarColor
+            activeColor: root.activeColor
+            inactiveColor: root.inactiveColor
+            accentColor: root.accentColor
+            mutedText: root.mutedText
+            hoverColor: root.hoverColor
+            onTabRequested: function(index) { root.selectTab(index) }
+            onCloseRequested: function(index) { root.closeTab(index) }
+            onSaveRequested: root.saveCurrent()
         }
 
-        // ==============================================
         // FILE INFORMATION BAR
-        // ==============================================
+
 
         Rectangle {
             Layout.fillWidth: true
@@ -651,9 +322,8 @@ Rectangle {
             }
         }
 
-        // ==============================================
         // STATUS MESSAGE
-        // ==============================================
+
 
         Label {
             Layout.fillWidth: true
@@ -672,9 +342,8 @@ Rectangle {
             wrapMode: Text.WordWrap
         }
 
-        // ==============================================
         // PREVIEW PANEL
-        // ==============================================
+
 
         PreviewPanel {
             Layout.fillWidth: true
@@ -686,78 +355,32 @@ Rectangle {
             devServerActive: root.devServerActive
         }
 
-        // ==============================================
         // CODE EDITOR
-        // ==============================================
 
-        ScrollView {
+
+
+        CodeEditorPane {
+            id: editor
             Layout.fillWidth: true
             Layout.fillHeight: true
-
             visible: root.activeTab >= 0
+            fileName: root.currentName
+            selectionColor: root.accentColor
 
-            clip: true
+            onTextChanged: {
+                if (root.loadingBuffer || root.activeTab < 0)
+                    return
 
-            TextArea {
-                id: editor
+                const document = documentModel.get(root.activeTab)
+                const wasDirty = document.dirty
+                const isDirty = editor.text !== document.original
 
-                padding: 16
+                documentModel.setProperty(root.activeTab, "draft", editor.text)
 
-                font.family: "Menlo"
-                font.pixelSize: 14
-
-                color: Theme.colors.text
-
-                textFormat: TextEdit.PlainText
-                wrapMode: TextEdit.NoWrap
-
-                selectByMouse: true
-                persistentSelection: true
-
-                selectionColor: root.accentColor
-
-                background: Rectangle {
-                    color: Theme.colors.canvas
+                if (wasDirty !== isDirty) {
+                    documentModel.setProperty(root.activeTab, "dirty", isDirty)
+                    root.dirtyCount += isDirty ? 1 : -1
                 }
-
-                onTextChanged: {
-                    if (root.loadingBuffer ||
-                        root.activeTab < 0)
-                        return
-
-                    const document = documents.get(root.activeTab)
-
-                    const wasDirty = document.dirty
-                    const isDirty = text !== document.original
-
-                    documents.setProperty(
-                        root.activeTab,
-                        "draft",
-                        text
-                    )
-
-                    if (wasDirty !== isDirty) {
-                        documents.setProperty(
-                            root.activeTab,
-                            "dirty",
-                            isDirty
-                        )
-
-                        root.dirtyCount += isDirty ? 1 : -1
-                    }
-                }
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-
-                    onTapped: function(eventPoint) {
-                        editorMenu.popup()
-                    }
-                }
-            }
-
-            EditorContextMenu {
-                id: editorMenu
-                editor: editor
             }
         }
     }
