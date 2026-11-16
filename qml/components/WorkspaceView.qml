@@ -15,6 +15,8 @@ SplitView {
     required property ProjectController controller
     property alias editorWorkspace: editorWorkspace
 
+    property string selectedComponentId: ""
+
     orientation: Qt.Horizontal
 
     ComponentLibraryPanel {
@@ -23,6 +25,10 @@ SplitView {
 
         canAddComponent: root.canAddComponent
         onAddButtonRequested: root.addButtonRequested()
+
+        onComponentSelected: function(componentId) {
+            root.selectedComponentId = componentId
+        }
     }
 
     EditorWorkspace {
@@ -43,9 +49,27 @@ SplitView {
     //     devServerActive: root.devServerActive
     // }
 
-    InspectorPanel {
-        SplitView.preferredWidth: 280
-        SplitView.minimumWidth: 200
-        fileDetails: root.selectedFileDetails
+    Loader {
+        SplitView.preferredWidth: 320
+        SplitView.minimumWidth: 220
+
+        sourceComponent: root.selectedComponentId === "navbar"
+                         ? navbarInspectorComponent : fileInspectorComponent
+    }
+
+    Component {
+        id: navbarInspectorComponent
+
+        NavbarInspector {
+            controller: root.controller
+        }
+    }
+
+    Component {
+        id: fileInspectorComponent
+
+        InspectorPanel {
+            fileDetails: root.selectedFileDetails
+        }
     }
 }

@@ -358,6 +358,81 @@ void ProjectController::addButtonComponent()
 }
 
 
+QUrl ProjectController::navbarConfigUrl() const
+{
+    if (m_activeProjectPath.isEmpty())
+        return {};
+
+    const QDir project(m_activeProjectPath);
+    return QUrl::fromLocalFile(
+        project.absoluteFilePath("src/components/navbar/navbar.config.json")
+        );
+}
+
+QString ProjectController::installNavbar()
+{
+    if (m_activeProjectPath.isEmpty())
+        return QStringLiteral("Open a React project first.");
+
+    if (busy() && !devServerActive())
+        return QStringLiteral("Wait for the current command to finish.");
+
+    const QDir project(m_activeProjectPath);
+
+    if (!QFileInfo(project.filePath("src/App.tsx")).isFile())
+        return QStringLiteral("This template expects a React TypeScript project.");
+
+    const QStringList folders{
+        "src", "src/components", "src/components/navbar"
+    };
+
+    for (const QString &folder : folders) {
+        if (QFileInfo(project.filePath(folder)).isSymLink())
+            return QStringLiteral("Cannot install through a symbolic link: ") + folder;
+    }
+
+    const QString targetFolder = QStringLiteral("src/components/navbar");
+
+    if (!project.mkpath(targetFolder))
+        return QStringLiteral("Could not create ") + targetFolder;
+
+    const QStringList files{"EngineNavbar.tsx", "navbar.config.json"};
+
+    for (const QString &name : files) {
+        const QString destination =
+            project.absoluteFilePath(targetFolder + "/" + name);
+        const QFileInfo existing(destination);
+
+        if (existing.isSymLink() || (existing.exists() && !existing.isFile()))
+            return QStringLiteral("Invalid destination: ") + name;
+
+        if (existing.isFile())
+            continue;
+
+        QFile source(QStringLiteral(":/templates/react/navbar/") + name);
+
+        if (!source.open(QIODevice::ReadOnly))
+            return QStringLiteral("Could not open template: ") + source.fileName();
+
+        const QByteArray bytes = source.readAll();
+
+        if (source.error() != QFileDevice::NoError || bytes.isEmpty())
+            return QStringLiteral("Could not read template: ") + name;
+
+        QSaveFile output(destination);
+
+        if (!output.open(QIODevice::WriteOnly)
+            || output.write(bytes) != bytes.size()
+            || !output.commit()) {
+            return QStringLiteral("Could not save ") + name + ": "
+                   + output.errorString();
+        }
+    }
+
+    emit logMessage("Navbar ready: " + targetFolder);
+    return {};
+}
+
 
 
 QUrl ProjectController::projectFolderUrl() const

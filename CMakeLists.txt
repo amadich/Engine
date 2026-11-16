@@ -17,6 +17,11 @@ qt_add_resources(appJeridiEngine component_templates
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/templates"
     FILES
         templates/react/engine-button/EngineButton.tsx
+        templates/react/navbar/EngineNavbar.tsx
+        templates/react/navbar/navbar.config.json
+)
+
+qt_add_resources(appJeridiEngine engine_assets
     PREFIX "/engine"
     FILES
         assets/icons/cube.svg
@@ -61,7 +66,12 @@ set(engine_qml_files
     qml/panels/EditorTabBar.qml
     qml/panels/CodeEditorPane.qml
     qml/panels/CompletionList.qml
+
+    qml/panels/NavbarInspector.qml
+
+    # OTHER TYPE (JS, JSON etc ...)
     qml/panels/EditorEditing.js
+
 )
 
 # Keep one QML module while organizing source files into folders.
@@ -86,7 +96,8 @@ qt_add_qml_module(appJeridiEngine
         src/infrastructure/processrunner.h
         src/infrastructure/processrunner.cpp
         src/infrastructure/projectfilesmodel.h
-        SOURCES src/editor/codesyntaxhighlighter.h src/editor/codesyntaxhighlighter.cpp
+        src/editor/codesyntaxhighlighter.h
+        src/editor/codesyntaxhighlighter.cpp
 )
 
 target_include_directories(appJeridiEngine PRIVATE

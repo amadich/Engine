@@ -48,6 +48,9 @@ public:
     Q_INVOKABLE void generateReact();
 
     Q_INVOKABLE void addButtonComponent();
+    Q_INVOKABLE QString installNavbar();
+    Q_INVOKABLE QUrl navbarConfigUrl() const;
+
     Q_INVOKABLE QVariantMap inspectFile(const QUrl &fileUrl) const;
 
     Q_INVOKABLE QString saveTextFile(const QUrl &fileUrl,

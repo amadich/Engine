@@ -8,6 +8,7 @@ Rectangle {
 
     property bool canAddComponent: false
     signal addButtonRequested()
+    signal componentSelected(string componentId)
 
     color: Theme.colors.surface
 
@@ -51,6 +52,11 @@ Rectangle {
                                 ]
                             }
                         ]
+
+                    },
+                    {
+                        name: "Navigation",
+                        rows: [{ name: "Navbar" }]
                     }
                 ]
             }
@@ -65,7 +71,8 @@ Rectangle {
                 required property string display
 
                 readonly property bool canActivate:
-                    hasChildren || (display === "Button" && root.canAddComponent)
+                    hasChildren || display === "Navbar"
+                    || (display === "Button" && root.canAddComponent)
 
                 implicitHeight: 30
                 implicitWidth: libraryTree.width
@@ -117,7 +124,9 @@ Rectangle {
                     onTapped: {
                         if (entry.hasChildren) {
                             libraryTree.toggleExpanded(entry.row)
-                        } else {
+                        } else if (entry.display === "Navbar") {
+                            root.componentSelected("navbar")
+                        } else if (entry.display === "Button") {
                             root.addButtonRequested()
                         }
                     }
