@@ -7,6 +7,7 @@ Rectangle {
     id: root
 
     required property ProjectController controller
+    required property ComponentManager componentManager
 
     property url configUrl: ""
     property string originalConfigText: ""
@@ -29,7 +30,7 @@ Rectangle {
         installed = false
         originalConfigText = ""
         statusMessage = ""
-        configUrl = controller.navbarConfigUrl()
+        configUrl = componentManager.configurationUrl("navbar")
 
         if (configUrl.toString() === "")
             return
@@ -62,14 +63,24 @@ Rectangle {
             statusMessage = "Invalid navbar.config.json: " + error.message
         }
 
-        // Confirm that the TSX file exists as well as the configuration.
-        const componentUrl = configUrl.toString().replace(
-            /navbar\.config\.json$/, "EngineNavbar.tsx")
-        const component = controller.inspectFile(componentUrl)
-        installed = !component.error && component.kind === "text"
+        // The package manager knows which files belong to this component.
+        installed = componentManager.isInstalled("navbar")
 
         if (configLoaded && !installed)
             statusMessage = "Use Add to Project to install EngineNavbar.tsx."
+    }
+
+    Connections {
+        target: root.controller
+        function onActiveProjectChanged() { root.reloadConfig() }
+    }
+
+    Connections {
+        target: root.componentManager
+        function onComponentInstalled(componentId) {
+            if (componentId === "navbar")
+                root.reloadConfig()
+        }
     }
 
     function applyConfig() {
@@ -227,12 +238,10 @@ Rectangle {
                 text: "Add to Project"
 
                 onClicked: {
-                    const error = root.controller.installNavbar()
+                    const error = root.componentManager.installComponent("navbar")
 
                     if (error)
                         root.statusMessage = error
-                    else
-                        root.reloadConfig()
                 }
             }
 

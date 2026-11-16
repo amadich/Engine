@@ -1,13 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt.labs.qmlmodels
+import JeridiEngine
 
 Rectangle {
     id: root
 
     property bool canAddComponent: false
-    signal addButtonRequested()
+    signal installComponentRequested(string componentId)
     signal componentSelected(string componentId)
 
     color: Theme.colors.surface
@@ -36,30 +36,7 @@ Rectangle {
 
             ScrollBar.vertical: ScrollBar {}
 
-            model: TreeModel {
-                TableModelColumn {
-                    display: "name"
-                }
-
-                rows: [
-                    {
-                        name: "UI Components",
-                        rows: [
-                            {
-                                name: "Inputs",
-                                rows: [
-                                    { name: "Button" }
-                                ]
-                            }
-                        ]
-
-                    },
-                    {
-                        name: "Navigation",
-                        rows: [{ name: "Navbar" }]
-                    }
-                ]
-            }
+            model: ComponentRegistry
 
             delegate: Rectangle {
                 id: entry
@@ -69,10 +46,12 @@ Rectangle {
                 required property bool expanded
                 required property bool hasChildren
                 required property string display
+                required property string componentId
+                required property string activation
 
                 readonly property bool canActivate:
-                    hasChildren || display === "Navbar"
-                    || (display === "Button" && root.canAddComponent)
+                    hasChildren || (componentId !== ""
+                                    && (activation !== "install" || root.canAddComponent))
 
                 implicitHeight: 30
                 implicitWidth: libraryTree.width
@@ -124,10 +103,10 @@ Rectangle {
                     onTapped: {
                         if (entry.hasChildren) {
                             libraryTree.toggleExpanded(entry.row)
-                        } else if (entry.display === "Navbar") {
-                            root.componentSelected("navbar")
-                        } else if (entry.display === "Button") {
-                            root.addButtonRequested()
+                        } else if (entry.activation === "install") {
+                            root.installComponentRequested(entry.componentId)
+                        } else if (entry.componentId !== "") {
+                            root.componentSelected(entry.componentId)
                         }
                     }
                 }

@@ -1,0 +1,12 @@
+{
+  "id": "button",
+  "name": "Button",
+  "category": ["UI Components", "Inputs"],
+  "activation": "install",
+  "files": [
+    {
+      "source": "template/EngineButton.tsx",
+      "target": "src/components/EngineButton.tsx"
+    }
+  ]
+}

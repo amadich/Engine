@@ -86,6 +86,12 @@ ApplicationWindow {
         }
     }
 
+    ComponentManager {
+        id: componentManager
+        projectController: projectController
+        onLogMessage: function(message) { outputPanel.appendLog(message) }
+    }
+
     Connections {
         target: projectController
 
@@ -148,6 +154,7 @@ ApplicationWindow {
         WorkspaceView {
             id: workspace
             controller: projectController
+            componentManager: componentManager
 
             SplitView.fillHeight: true
             SplitView.minimumHeight: 300
@@ -158,7 +165,11 @@ ApplicationWindow {
                              && (!projectController.busy
                                  || projectController.devServerActive)
 
-            onAddButtonRequested: projectController.addButtonComponent()
+            onInstallComponentRequested: function(componentId) {
+                const error = componentManager.installComponent(componentId)
+                if (error)
+                    outputPanel.appendLog("Error: " + error)
+            }
             selectedFileDetails: window.selectedFileDetails
 
 

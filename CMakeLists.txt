@@ -12,13 +12,22 @@ qt_add_executable(appJeridiEngine
     src/main.cpp
 )
 
-qt_add_resources(appJeridiEngine component_templates
-    PREFIX "/templates"
-    BASE "${CMAKE_CURRENT_SOURCE_DIR}/templates"
-    FILES
-        templates/react/engine-button/EngineButton.tsx
-        templates/react/navbar/EngineNavbar.tsx
-        templates/react/navbar/navbar.config.json
+# Package data is collected automatically. New packages only need their own files.
+file(GLOB_RECURSE component_package_files CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/component-packages/*"
+)
+set(component_package_assets ${component_package_files})
+list(FILTER component_package_assets EXCLUDE REGEX "\\.qml$")
+
+qt_add_resources(appJeridiEngine component_packages
+    PREFIX "/component-packages"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/component-packages"
+    FILES ${component_package_assets}
+)
+
+# Custom inspectors belong to their package, but compile into the QML module.
+file(GLOB_RECURSE component_inspectors CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/component-packages/*/inspector/*.qml"
 )
 
 qt_add_resources(appJeridiEngine engine_assets
@@ -49,6 +58,7 @@ set(engine_qml_files
     qml/Main.qml
     qml/components/EngineToolbar.qml
     qml/components/WorkspaceView.qml
+    qml/inspectors/InspectorHost.qml
     qml/panels/ComponentLibraryPanel.qml
     qml/panels/PreviewPanel.qml
     qml/panels/InspectorPanel.qml
@@ -67,19 +77,24 @@ set(engine_qml_files
     qml/panels/CodeEditorPane.qml
     qml/panels/CompletionList.qml
 
-    qml/panels/NavbarInspector.qml
-
     # OTHER TYPE (JS, JSON etc ...)
     qml/panels/EditorEditing.js
 
 )
+list(APPEND engine_qml_files ${component_inspectors})
 
 # Keep one QML module while organizing source files into folders.
 foreach(qml_file IN LISTS engine_qml_files)
-    get_filename_component(qml_name "${qml_file}" NAME)
-    set_source_files_properties("${qml_file}" PROPERTIES
-        QT_RESOURCE_ALIAS "${qml_name}"
-    )
+    if(IS_ABSOLUTE "${qml_file}")
+        file(RELATIVE_PATH package_qml_path
+            "${CMAKE_CURRENT_SOURCE_DIR}/component-packages" "${qml_file}")
+        set_source_files_properties("${qml_file}" PROPERTIES
+            QT_RESOURCE_ALIAS "packages/${package_qml_path}")
+    else()
+        get_filename_component(qml_name "${qml_file}" NAME)
+        set_source_files_properties("${qml_file}" PROPERTIES
+            QT_RESOURCE_ALIAS "${qml_name}")
+    endif()
 endforeach()
 
 set_source_files_properties(qml/theme/Theme.qml PROPERTIES
@@ -93,6 +108,12 @@ qt_add_qml_module(appJeridiEngine
     SOURCES
         src/application/projectcontroller.h
         src/application/projectcontroller.cpp
+        src/components/componentregistry.h
+        src/components/componentregistry.cpp
+        src/components/componentmanager.h
+        src/components/componentmanager.cpp
+        src/components/componentinstaller.h
+        src/components/componentinstaller.cpp
         src/infrastructure/processrunner.h
         src/infrastructure/processrunner.cpp
         src/infrastructure/projectfilesmodel.h
@@ -102,6 +123,7 @@ qt_add_qml_module(appJeridiEngine
 
 target_include_directories(appJeridiEngine PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/application"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/components"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/infrastructure"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/editor"
 )

@@ -8,11 +8,12 @@ SplitView {
     property bool devServerActive: false
 
     property bool canAddComponent: false
-    signal addButtonRequested()
+    signal installComponentRequested(string componentId)
 
     property var selectedFileDetails: ({})
 
     required property ProjectController controller
+    required property ComponentManager componentManager
     property alias editorWorkspace: editorWorkspace
 
     property string selectedComponentId: ""
@@ -24,7 +25,9 @@ SplitView {
         SplitView.minimumWidth: 180
 
         canAddComponent: root.canAddComponent
-        onAddButtonRequested: root.addButtonRequested()
+        onInstallComponentRequested: function(componentId) {
+            root.installComponentRequested(componentId)
+        }
 
         onComponentSelected: function(componentId) {
             root.selectedComponentId = componentId
@@ -49,27 +52,13 @@ SplitView {
     //     devServerActive: root.devServerActive
     // }
 
-    Loader {
+    InspectorHost {
         SplitView.preferredWidth: 320
         SplitView.minimumWidth: 220
 
-        sourceComponent: root.selectedComponentId === "navbar"
-                         ? navbarInspectorComponent : fileInspectorComponent
-    }
-
-    Component {
-        id: navbarInspectorComponent
-
-        NavbarInspector {
-            controller: root.controller
-        }
-    }
-
-    Component {
-        id: fileInspectorComponent
-
-        InspectorPanel {
-            fileDetails: root.selectedFileDetails
-        }
+        controller: root.controller
+        componentManager: root.componentManager
+        componentId: root.selectedComponentId
+        fileDetails: root.selectedFileDetails
     }
 }

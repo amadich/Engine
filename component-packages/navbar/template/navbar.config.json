@@ -1,0 +1,9 @@
+{
+  "brand": "My Website",
+  "widthPercent": 100,
+  "minHeight": 64,
+  "background": "#242831",
+  "foreground": "#F1F4F9",
+  "placement": "flow",
+  "alignment": "end"
+}
