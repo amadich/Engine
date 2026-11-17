@@ -5,31 +5,35 @@ import JeridiEngine
 CheckBox {
     id: root
     implicitHeight: 24
-    font.pixelSize: 11
+    font.pixelSize: 10
     spacing: 7
+    HoverHandler { cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor }
 
     indicator: Rectangle {
         x: root.leftPadding
         y: (root.height - height) / 2
-        width: 16
-        height: 16
+        width: 15
+        height: 15
         radius: 3
-        color: root.checked ? Theme.colors.selection : Theme.colors.surface
+        color: !root.enabled ? Theme.colors.panel
+             : root.checked ? Theme.colors.selection
+             : root.hovered ? Theme.colors.hover : Theme.colors.surface
         border.width: 1
-        border.color: root.checked ? Theme.colors.accent : Theme.colors.border
+        border.color: root.enabled && (root.checked || root.hovered) ? Theme.colors.accent
+                      : Theme.colors.border
         Text {
             anchors.centerIn: parent
             text: "✓"
-            font.pixelSize: 12
+            font.pixelSize: 11
             font.bold: true
-            color: Theme.colors.text
+            color: root.enabled ? Theme.colors.text : Theme.colors.disabled
             visible: root.checked
         }
     }
     contentItem: Text {
         text: root.text
         font: root.font
-        color: Theme.colors.text
+        color: root.enabled ? Theme.colors.text : Theme.colors.disabled
         leftPadding: root.indicator.width + root.spacing
         verticalAlignment: Text.AlignVCenter
     }

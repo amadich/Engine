@@ -9,6 +9,8 @@ RowLayout {
     id: root
     property string caption: "Color"
     property string helpText: "Click the swatch to open the color palette."
+    property string filterQuery: ""
+    property bool showAll: false
     property string colorValue: "#FFFFFF"
     property int labelWidth: width < 255 ? 74 : 92
     property real hue: 210
@@ -19,7 +21,10 @@ RowLayout {
 
     Layout.fillWidth: true
     spacing: 6
-    implicitHeight: 26
+    implicitHeight: 25
+    visible: filterQuery.trim().length === 0 || showAll
+             || caption.toLowerCase().indexOf(filterQuery.toLowerCase()) >= 0
+             || helpText.toLowerCase().indexOf(filterQuery.toLowerCase()) >= 0
 
     function channelHex(v) {
         return Math.round(Math.max(0, Math.min(1, v)) * 255)
@@ -101,12 +106,12 @@ RowLayout {
 
     Rectangle {
         id: swatch
-        Layout.preferredWidth: 29
+        Layout.preferredWidth: 28
         Layout.preferredHeight: 24
         radius: 3
         color: root.validColor ? root.colorValue : "transparent"
         border.width: 1
-        border.color: Theme.colors.border
+        border.color: swatchHover.hovered ? Theme.colors.accent : Theme.colors.border
         Rectangle {
             anchors.fill: parent
             anchors.margins: 3
@@ -115,11 +120,11 @@ RowLayout {
         }
         MouseArea {
             anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: root.openPalette()
+            cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+            onClicked: { if (root.enabled) root.openPalette() }
         }
         ToolTip.visible: swatchHover.hovered
-        ToolTip.text: "Open color picker"
+        ToolTip.text: root.enabled ? "Open color picker" : "Configuration not loaded"
         HoverHandler { id: swatchHover }
     }
 

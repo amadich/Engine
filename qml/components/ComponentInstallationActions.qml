@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import JeridiEngine
 
-// Package-agnostic installation actions. This is UI only; C++ owns file operations.
+// Package-agnostic file actions. All writes remain in ComponentManager / C++.
 Item {
     id: root
     required property ProjectController controller
@@ -14,6 +14,11 @@ Item {
     property bool hasUnsavedChanges: false
     readonly property bool canWrite: controller.activeProjectPath !== ""
                                      && (!controller.busy || controller.devServerActive)
+    readonly property bool actionsReady: canWrite && !hasUnsavedChanges
+    readonly property string blockedReason: controller.activeProjectPath === ""
+        ? "Open a project first"
+        : hasUnsavedChanges ? "Apply or reload pending Inspector edits first"
+        : "Project is currently busy"
 
     implicitHeight: section.implicitHeight
 
@@ -25,84 +30,104 @@ Item {
         width: root.width
         title: "Project Package"
         iconSource: "qrc:/engine/assets/icons/folder.svg"
-        tag: root.installed ? "ACTIVE" : "NOT INSTALLED"
-        description: "Installation, relocation and removal affect project files only after confirmation."
+        tag: root.installed ? "ACTIVE" : "DRAFT"
+        description: "Choose when and where to install, relocate or remove package files."
 
-        Label {
+        RowLayout {
             Layout.fillWidth: true
-            text: root.installed
-                ? root.componentManager.installedDirectory(root.componentId)
-                : "Not added to this project. The settings above are a draft."
-            color: Theme.colors.muted
-            font.pixelSize: 10
-            wrapMode: Text.WrapAnywhere
-        }
-
-        Label {
-            Layout.fillWidth: true
-            visible: root.hasUnsavedChanges
-            text: "Apply or reload modified settings before changing project files."
-            font.pixelSize: 10
-            color: Theme.colors.accent
-            wrapMode: Text.WordWrap
-        }
-
-        Button {
-            Layout.fillWidth: true
-            implicitHeight: 28
-            visible: !root.installed
-            enabled: root.canWrite && !root.hasUnsavedChanges
-            text: "Install to Project…"
-            font.pixelSize: 11
-            icon.source: "qrc:/engine/assets/icons/cube_blue.svg"
-            icon.width: 14
-            icon.height: 14
-            onClicked: root.componentManager.requestInstall(root.componentId)
-            background: Rectangle {
-                radius: 3
-                color: Theme.colors.control
-                border.color: Theme.colors.border
-                border.width: 1
+            spacing: 6
+            Image {
+                source: root.installed ? "qrc:/engine/assets/icons/folder_1.svg"
+                                       : "qrc:/engine/assets/icons/cube_block.svg"
+                sourceSize: Qt.size(28, 28)
+                Layout.preferredWidth: 15
+                Layout.preferredHeight: 15
             }
+            Label {
+                Layout.fillWidth: true
+                text: root.installed ? root.componentManager.installedDirectory(root.componentId)
+                                     : "Not installed — editing a draft"
+                color: Theme.colors.muted
+                font.pixelSize: 10
+                wrapMode: Text.WrapAnywhere
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: warningText.implicitHeight + 12
+            visible: root.hasUnsavedChanges
+            radius: 3
+            color: Theme.colors.control
+            border.color: Theme.colors.border
+            border.width: 1
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 7
+                anchors.rightMargin: 7
+                spacing: 5
+                Image {
+                    source: "qrc:/engine/assets/icons/warning_2.svg"
+                    Layout.preferredWidth: 14
+                    Layout.preferredHeight: 14
+                }
+                Label {
+                    id: warningText
+                    Layout.fillWidth: true
+                    text: "Save or reload changes before modifying project files."
+                    color: Theme.colors.accent
+                    font.pixelSize: 9
+                    wrapMode: Text.WordWrap
+                }
+            }
+        }
+
+        InspectorActionButton {
+            Layout.fillWidth: true
+            buttonHeight: 28
+            visible: !root.installed
+            text: "Install to Project…"
+            iconSource: "qrc:/engine/assets/icons/cube_blue.svg"
+            variant: "primary"
+            actionEnabled: root.actionsReady
+            hint: "Choose a destination before writing package files"
+            disabledReason: root.blockedReason
+            onClicked: root.componentManager.requestInstall(root.componentId)
         }
 
         RowLayout {
             Layout.fillWidth: true
             visible: root.installed
-            enabled: root.canWrite && !root.hasUnsavedChanges
             spacing: 6
-            Button {
+            InspectorActionButton {
                 Layout.fillWidth: true
-                implicitHeight: 28
+                buttonHeight: 28
                 text: "Relocate…"
-                font.pixelSize: 11
-                icon.source: "qrc:/engine/assets/icons/folder.svg"
-                icon.width: 14
-                icon.height: 14
+                iconSource: "qrc:/engine/assets/icons/folder.svg"
+                actionEnabled: root.actionsReady
+                hint: "Preview a safe move to another project directory"
+                disabledReason: root.blockedReason
                 onClicked: root.componentManager.requestMove(root.componentId)
-                background: Rectangle {
-                    radius: 3
-                    color: Theme.colors.control
-                    border.color: Theme.colors.border
-                    border.width: 1
-                }
             }
-            Button {
+            InspectorActionButton {
                 Layout.fillWidth: true
-                implicitHeight: 28
+                buttonHeight: 28
                 text: "Remove…"
-                font.pixelSize: 11
-                icon.source: "qrc:/engine/assets/icons/trash.svg"
-                icon.width: 14
-                icon.height: 14
+                iconSource: "qrc:/engine/assets/icons/trash.svg"
+                variant: "danger"
+                actionEnabled: root.actionsReady
+                hint: "Review references and move owned files to the project trash"
+                disabledReason: root.blockedReason
                 onClicked: root.componentManager.requestRemove(root.componentId)
-                background: Rectangle {
-                    radius: 3
-                    color: Theme.colors.control
-                    border.color: Theme.colors.border
-                    border.width: 1
-                }
             }
+        }
+
+        Label {
+            Layout.fillWidth: true
+            text: "Changes to project files always require confirmation."
+            font.pixelSize: 9
+            color: Theme.colors.muted
+            wrapMode: Text.WordWrap
         }
     }
 

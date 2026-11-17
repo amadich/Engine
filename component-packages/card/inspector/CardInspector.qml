@@ -29,23 +29,16 @@ Item {
         || paddingInput.value !== Number(savedSettings.padding ?? 20)
         || shadowInput.checked !== (savedSettings.shadow === true)
     )
-    readonly property real contrast: contrastRatio(backgroundField.colorValue, foregroundField.colorValue)
-
-    function luminance(hex) {
-        if (!hexColor.test(hex)) return 0
-        const values = [1, 3, 5].map(function(index) {
-            const c = parseInt(hex.substr(index, 2), 16) / 255
-            return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
-        })
-        return 0.2126 * values[0] + 0.7152 * values[1] + 0.0722 * values[2]
-    }
-    function contrastRatio(background, foreground) {
-        if (!hexColor.test(background) || !hexColor.test(foreground)) return 0
-        const a = luminance(background)
-        const b = luminance(foreground)
-        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
-    }
-
+    // Names are diagnostic only; no new JSON keys are introduced.
+    readonly property var changedProperties: !configLoaded ? [] : [
+        { name: "Title", changed: titleInput.text !== String(savedSettings.title ?? "My Card") },
+        { name: "Description", changed: descriptionInput.text !== String(savedSettings.description ?? "") },
+        { name: "Background", changed: backgroundField.colorValue !== String(savedSettings.background ?? "#FFFFFF").toUpperCase() },
+        { name: "Text color", changed: foregroundField.colorValue !== String(savedSettings.foreground ?? "#1F2937").toUpperCase() },
+        { name: "Corner radius", changed: radiusInput.value !== Number(savedSettings.borderRadius ?? 12) },
+        { name: "Padding", changed: paddingInput.value !== Number(savedSettings.padding ?? 20) },
+        { name: "Drop shadow", changed: shadowInput.checked !== (savedSettings.shadow === true) }
+    ].filter(function(item) { return item.changed }).map(function(item) { return item.name })
     function reloadConfig() {
         configLoaded = false
         statusError = false
@@ -151,6 +144,7 @@ Item {
     }
 
     InspectorScaffold {
+        id: inspectorShell
         anchors.fill: parent
         controller: root.controller
         componentManager: root.componentManager
@@ -159,6 +153,7 @@ Item {
         description: "React · Display / Container"
         installed: root.installed
         dirty: root.dirty
+        changeCount: root.changedProperties.length
         statusMessage: root.statusMessage
         statusIsError: root.statusError
         canApply: root.configLoaded && root.dirty && (!root.installed || root.canWrite)
@@ -169,7 +164,9 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 151
+            Layout.preferredHeight: 142
+            visible: inspectorShell.previewVisible && (!inspectorShell.hasSearch
+                     || "preview card visual".indexOf(inspectorShell.filterText) >= 0)
             color: Theme.colors.canvas
 
             ColumnLayout {
@@ -221,11 +218,16 @@ Item {
         }
 
         InspectorSection {
+            id: contentSection
             Layout.fillWidth: true
             title: "Content"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "title description text heading content"
             iconSource: "qrc:/engine/assets/icons/file.svg"
             description: "Values are saved to card.config.json."
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: contentSection.sectionTitleMatches
                 caption: "Title"
                 helpText: "Heading shown inside the card."
                 InspectorTextField {
@@ -236,6 +238,8 @@ Item {
                 }
             }
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: contentSection.sectionTitleMatches
                 caption: "Description"
                 helpText: "Supporting text displayed below the heading."
                 InspectorTextField {
@@ -248,17 +252,24 @@ Item {
         }
 
         InspectorSection {
+            id: appearanceSection
             Layout.fillWidth: true
             title: "Appearance"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "appearance background text color hex palette"
             iconSource: "qrc:/engine/assets/icons/image.svg"
             description: "Click a swatch to choose a color. Hex codes update automatically."
             InspectorColorField {
+                filterQuery: inspectorShell.filterText
+                showAll: appearanceSection.sectionTitleMatches
                 id: backgroundField
                 caption: "Background"
                 colorValue: "#FFFFFF"
                 enabled: root.configLoaded
             }
             InspectorColorField {
+                filterQuery: inspectorShell.filterText
+                showAll: appearanceSection.sectionTitleMatches
                 id: foregroundField
                 caption: "Text Color"
                 colorValue: "#1F2937"
@@ -267,10 +278,15 @@ Item {
         }
 
         InspectorSection {
+            id: layoutSection
             Layout.fillWidth: true
             title: "Layout & Effects"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "layout corner radius padding shadow effects"
             iconSource: "qrc:/engine/assets/icons/cube.svg"
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Corner Radius"
                 helpText: "Rounded corners in CSS pixels (0–48)."
                 InspectorNumberField {
@@ -282,6 +298,8 @@ Item {
                 Label { text: "px"; font.pixelSize: 10; color: Theme.colors.muted }
             }
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Padding"
                 helpText: "Space inside the card in CSS pixels (0–48)."
                 InspectorNumberField {
@@ -293,6 +311,8 @@ Item {
                 Label { text: "px"; font.pixelSize: 10; color: Theme.colors.muted }
             }
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Drop Shadow"
                 helpText: "Toggle the shadow already supported by EngineCard.tsx."
                 InspectorToggle {
@@ -309,32 +329,90 @@ Item {
             Layout.fillWidth: true
             title: "Accessibility"
             iconSource: "qrc:/engine/assets/icons/warning_2.svg"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "accessibility contrast ratio wcag aa aaa"
             expanded: false
-            description: "Computed information only; it does not modify the React component."
+            description: "Read-only WCAG contrast calculation; does not edit the React component."
+            InspectorContrastMetric {
+                backgroundColor: backgroundField.colorValue
+                foregroundColor: foregroundField.colorValue
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Quick Presets"
+            iconSource: "qrc:/engine/assets/icons/star.svg"
+            description: "Set existing layout values; changes are not saved until Apply."
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "presets compact balanced spacious radius padding shadow"
+            expanded: false
             RowLayout {
                 Layout.fillWidth: true
-                Label {
+                spacing: 5
+                InspectorActionButton {
                     Layout.fillWidth: true
-                    text: "Text contrast ratio"
-                    font.pixelSize: 10
-                    color: Theme.colors.muted
+                    text: "Compact"
+                    actionEnabled: root.configLoaded
+                    hint: "Radius 6px, padding 10px, no shadow"
+                    onClicked: { radiusInput.value = 6; paddingInput.value = 10; shadowInput.checked = false }
                 }
-                Label {
-                    text: root.contrast.toFixed(2) + ":1"
-                    font.pixelSize: 11
-                    font.bold: true
-                    color: Theme.colors.text
+                InspectorActionButton {
+                    Layout.fillWidth: true
+                    text: "Balanced"
+                    actionEnabled: root.configLoaded
+                    hint: "Radius 12px, padding 20px, shadow enabled"
+                    onClicked: { radiusInput.value = 12; paddingInput.value = 20; shadowInput.checked = true }
                 }
-                Label {
-                    text: root.contrast >= 4.5 ? "AA" : "LOW"
-                    font.pixelSize: 10
-                    color: root.contrast >= 4.5 ? "#42B883" : Theme.colors.error
+                InspectorActionButton {
+                    Layout.fillWidth: true
+                    text: "Spacious"
+                    actionEnabled: root.configLoaded
+                    hint: "Radius 20px, padding 28px, shadow enabled"
+                    onClicked: { radiusInput.value = 20; paddingInput.value = 28; shadowInput.checked = true }
                 }
             }
             Label {
                 Layout.fillWidth: true
-                text: "Normal-sized text generally needs at least 4.5:1 contrast for WCAG AA."
-                font.pixelSize: 10
+                text: "Presets edit only supported card layout settings."
+                font.pixelSize: 9
+                color: Theme.colors.muted
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Pending Changes"
+            iconSource: "qrc:/engine/assets/icons/preview.svg"
+            tag: root.changedProperties.length + " EDITS"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "pending changes edits modified unsaved"
+            filterAllowed: root.dirty
+            expanded: false
+            InspectorChangeList {
+                changes: root.changedProperties
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Configuration Info"
+            iconSource: "qrc:/engine/assets/icons/file.svg"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "configuration info json path file schema"
+            expanded: false
+            Label {
+                Layout.fillWidth: true
+                text: root.installed ? root.configUrl.toString() : "Draft configuration (not written to disk)"
+                font.pixelSize: 9
+                color: Theme.colors.muted
+                wrapMode: Text.WrapAnywhere
+            }
+            Label {
+                Layout.fillWidth: true
+                text: "Existing JSON keys outside the supported Card settings are preserved."
+                font.pixelSize: 9
                 color: Theme.colors.muted
                 wrapMode: Text.WordWrap
             }

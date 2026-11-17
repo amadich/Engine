@@ -30,6 +30,15 @@ Item {
         || alignmentInput.currentIndex !== (["start", "center", "end"].indexOf(savedSettings.alignment ?? "end"))
     )
 
+    readonly property var changedProperties: !configLoaded ? [] : [
+        { name: "Brand", changed: brandInput.text !== String(savedSettings.brand ?? "My Website") },
+        { name: "Width", changed: widthInput.value !== Number(savedSettings.widthPercent ?? 100) },
+        { name: "Minimum height", changed: heightInput.value !== Number(savedSettings.minHeight ?? 64) },
+        { name: "Background", changed: backgroundField.colorValue !== String(savedSettings.background ?? "#242831").toUpperCase() },
+        { name: "Text color", changed: foregroundField.colorValue !== String(savedSettings.foreground ?? "#F1F4F9").toUpperCase() },
+        { name: "Placement", changed: placementInput.currentIndex !== (savedSettings.placement === "sticky" ? 1 : 0) },
+        { name: "Links alignment", changed: alignmentInput.currentIndex !== ["start", "center", "end"].indexOf(savedSettings.alignment ?? "end") }
+    ].filter(function(item) { return item.changed }).map(function(item) { return item.name })
     function reloadConfig() {
         configLoaded = false
         statusError = false
@@ -132,6 +141,7 @@ Item {
     }
 
     InspectorScaffold {
+        id: inspectorShell
         anchors.fill: parent
         controller: root.controller
         componentManager: root.componentManager
@@ -140,6 +150,7 @@ Item {
         description: "React · Navigation"
         installed: root.installed
         dirty: root.dirty
+        changeCount: root.changedProperties.length
         statusMessage: root.statusMessage
         statusIsError: root.statusError
         canApply: root.configLoaded && root.dirty && (!root.installed || root.canWrite)
@@ -150,7 +161,9 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 114
+            Layout.preferredHeight: 105
+            visible: inspectorShell.previewVisible && (!inspectorShell.hasSearch
+                     || "preview navbar visual schematic".indexOf(inspectorShell.filterText) >= 0)
             color: Theme.colors.canvas
             ColumnLayout {
                 anchors.fill: parent
@@ -200,10 +213,15 @@ Item {
         }
 
         InspectorSection {
+            id: contentSection
             Layout.fillWidth: true
             title: "Content"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "brand title text"
             iconSource: "qrc:/engine/assets/icons/file.svg"
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: contentSection.sectionTitleMatches
                 caption: "Brand"
                 helpText: "Text shown on the left side of the navigation bar."
                 InspectorTextField {
@@ -216,10 +234,15 @@ Item {
         }
 
         InspectorSection {
+            id: layoutSection
             Layout.fillWidth: true
             title: "Layout"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "layout width height placement sticky align links"
             iconSource: "qrc:/engine/assets/icons/cube.svg"
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Width"
                 helpText: "Navbar width relative to its parent (25–100%)."
                 InspectorNumberField {
@@ -231,6 +254,8 @@ Item {
                 Label { text: "%"; font.pixelSize: 10; color: Theme.colors.muted }
             }
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Min. Height"
                 helpText: "CSS minimum height in pixels."
                 InspectorNumberField {
@@ -242,6 +267,8 @@ Item {
                 Label { text: "px"; font.pixelSize: 10; color: Theme.colors.muted }
             }
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Placement"
                 helpText: "Normal document flow or sticky at the top while scrolling."
                 InspectorComboBox {
@@ -252,6 +279,8 @@ Item {
                 }
             }
             InspectorPropertyRow {
+                filterQuery: inspectorShell.filterText
+                showAll: layoutSection.sectionTitleMatches
                 caption: "Links Align"
                 helpText: "Alignment of the hard-coded Home/About/Contact links."
                 InspectorComboBox {
@@ -265,17 +294,24 @@ Item {
         }
 
         InspectorSection {
+            id: colorsSection
             Layout.fillWidth: true
             title: "Colors"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "color background text hex palette"
             iconSource: "qrc:/engine/assets/icons/image.svg"
             description: "Click a swatch for a live HSV color palette and HEX output."
             InspectorColorField {
+                filterQuery: inspectorShell.filterText
+                showAll: colorsSection.sectionTitleMatches
                 id: backgroundField
                 caption: "Background"
                 colorValue: "#242831"
                 enabled: root.configLoaded
             }
             InspectorColorField {
+                filterQuery: inspectorShell.filterText
+                showAll: colorsSection.sectionTitleMatches
                 id: foregroundField
                 caption: "Text Color"
                 colorValue: "#F1F4F9"
@@ -285,10 +321,82 @@ Item {
 
         InspectorSection {
             Layout.fillWidth: true
+            title: "Accessibility"
+            iconSource: "qrc:/engine/assets/icons/warning_2.svg"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "accessibility contrast ratio wcag aa aaa"
+            expanded: false
+            description: "Read-only WCAG contrast calculation; does not edit the React component."
+            InspectorContrastMetric {
+                backgroundColor: backgroundField.colorValue
+                foregroundColor: foregroundField.colorValue
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Layout Presets"
+            iconSource: "qrc:/engine/assets/icons/star.svg"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "presets width full narrow compact height"
+            expanded: false
+            description: "Presets only change supported width and height settings."
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 5
+                InspectorActionButton {
+                    Layout.fillWidth: true
+                    text: "Compact"
+                    actionEnabled: root.configLoaded
+                    hint: "Width 75%, min height 56px"
+                    onClicked: { widthInput.value = 75; heightInput.value = 56 }
+                }
+                InspectorActionButton {
+                    Layout.fillWidth: true
+                    text: "Full Width"
+                    actionEnabled: root.configLoaded
+                    hint: "Width 100%, min height 64px"
+                    onClicked: { widthInput.value = 100; heightInput.value = 64 }
+                }
+            }
+            Label {
+                Layout.fillWidth: true
+                text: "Presets are not saved until you apply changes."
+                font.pixelSize: 9
+                color: Theme.colors.muted
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Pending Changes"
+            iconSource: "qrc:/engine/assets/icons/preview.svg"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "pending changes edits modified unsaved"
+            filterAllowed: root.dirty
+            tag: root.changedProperties.length + " EDITS"
+            expanded: false
+            InspectorChangeList {
+                changes: root.changedProperties
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
             title: "Implementation Notes"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "notes implementation limitations hardcoded links"
             iconSource: "qrc:/engine/assets/icons/file.svg"
             expanded: false
             description: "A description of supported and unsupported settings."
+            Label {
+                Layout.fillWidth: true
+                text: root.installed ? root.configUrl.toString() : "Draft configuration (not written to disk)"
+                font.pixelSize: 9
+                color: Theme.colors.muted
+                wrapMode: Text.WrapAnywhere
+            }
             Label {
                 Layout.fillWidth: true
                 text: "The Home / About / Contact labels and destinations are currently defined in EngineNavbar.tsx. The Inspector can align them, but cannot edit their text or URLs yet."

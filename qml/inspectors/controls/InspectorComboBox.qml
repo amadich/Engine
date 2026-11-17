@@ -4,18 +4,19 @@ import JeridiEngine
 
 ComboBox {
     id: root
-    implicitHeight: 26
-    implicitWidth: 96
-    font.pixelSize: 11
+    implicitHeight: 25
+    implicitWidth: 92
+    font.pixelSize: 10
     leftPadding: 7
     rightPadding: 23
+    HoverHandler { cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor }
 
     contentItem: Text {
         leftPadding: 7
         rightPadding: 23
         text: root.displayText
         font: root.font
-        color: Theme.colors.text
+        color: root.enabled ? Theme.colors.text : Theme.colors.disabled
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
@@ -25,29 +26,31 @@ ComboBox {
         y: (root.height - height) / 2
         text: "▾"
         font.pixelSize: 12
-        color: Theme.colors.muted
+        color: root.enabled ? Theme.colors.muted : Theme.colors.disabled
     }
 
     background: Rectangle {
         radius: 3
-        color: root.down ? Theme.colors.hover : Theme.colors.surface
+        color: !root.enabled ? Theme.colors.panel
+             : root.down || root.hovered ? Theme.colors.hover : Theme.colors.surface
         border.width: 1
         border.color: root.activeFocus ? Theme.colors.accent : Theme.colors.border
     }
 
     delegate: ItemDelegate {
         width: root.width
-        implicitHeight: 27
+        implicitHeight: 26
         highlighted: root.highlightedIndex === index
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
         contentItem: Text {
             text: modelData
-            font.pixelSize: 11
+            font.pixelSize: 10
             color: Theme.colors.text
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
         background: Rectangle {
-            color: parent.highlighted ? Theme.colors.selection : Theme.colors.surface
+            color: parent.highlighted || parent.hovered ? Theme.colors.selection : Theme.colors.surface
         }
     }
 

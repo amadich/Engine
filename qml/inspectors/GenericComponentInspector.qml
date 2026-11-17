@@ -29,6 +29,7 @@ Item {
     }
 
     InspectorScaffold {
+        id: inspectorShell
         anchors.fill: parent
         controller: root.controller
         componentManager: root.componentManager
@@ -42,6 +43,8 @@ Item {
         InspectorSection {
             Layout.fillWidth: true
             title: "Package Contents"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "files contents source package tsx json"
             iconSource: "qrc:/engine/assets/icons/file.svg"
             tag: String((root.definition.files || []).length) + " FILES"
             Repeater {
@@ -70,6 +73,8 @@ Item {
         InspectorSection {
             Layout.fillWidth: true
             title: "Inspector Support"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "support configuration inspector settings"
             iconSource: "qrc:/engine/assets/icons/cube.svg"
             expanded: false
             Label {

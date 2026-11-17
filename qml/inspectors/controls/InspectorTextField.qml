@@ -4,23 +4,29 @@ import JeridiEngine
 
 TextField {
     id: root
-    implicitHeight: 26
-    implicitWidth: 90
-    leftPadding: 8
-    rightPadding: 7
+    implicitHeight: 25
+    implicitWidth: 86
+    leftPadding: 7
+    rightPadding: 6
     topPadding: 3
     bottomPadding: 3
-    font.pixelSize: 11
+    font.pixelSize: 10
     selectByMouse: true
-    color: Theme.colors.text
+    color: enabled ? Theme.colors.text : Theme.colors.disabled
     selectionColor: Theme.colors.selection
     selectedTextColor: Theme.colors.text
     placeholderTextColor: Theme.colors.muted
+    HoverHandler { cursorShape: root.enabled ? Qt.IBeamCursor : Qt.ForbiddenCursor }
 
     background: Rectangle {
         radius: 3
-        color: root.readOnly ? Theme.colors.panel : Theme.colors.surface
+        color: !root.enabled || root.readOnly ? Theme.colors.panel
+             : root.hovered ? Theme.colors.hover : Theme.colors.surface
         border.width: 1
-        border.color: root.activeFocus ? Theme.colors.accent : Theme.colors.border
+        border.color: root.activeFocus ? Theme.colors.accent
+                      : root.hovered && root.enabled ? Theme.colors.muted : Theme.colors.border
     }
+    ToolTip.visible: hovered && !enabled
+    ToolTip.text: "Field is unavailable until the configuration is loaded"
+    ToolTip.delay: 500
 }

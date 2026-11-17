@@ -8,13 +8,15 @@ SpinBox {
     to: 100
     stepSize: 1
     editable: true
-    implicitHeight: 26
-    implicitWidth: 80
-    font.pixelSize: 11
+    implicitHeight: 25
+    implicitWidth: 76
+    font.pixelSize: 10
+    HoverHandler { cursorShape: root.enabled ? Qt.IBeamCursor : Qt.ForbiddenCursor }
 
     background: Rectangle {
         radius: 3
-        color: Theme.colors.surface
+        color: !root.enabled ? Theme.colors.panel
+             : root.hovered ? Theme.colors.hover : Theme.colors.surface
         border.width: 1
         border.color: root.activeFocus ? Theme.colors.accent : Theme.colors.border
     }
@@ -22,7 +24,7 @@ SpinBox {
     contentItem: TextInput {
         text: root.textFromValue(root.value, root.locale)
         font: root.font
-        color: Theme.colors.text
+        color: root.enabled ? Theme.colors.text : Theme.colors.disabled
         selectionColor: Theme.colors.selection
         selectedTextColor: Theme.colors.text
         horizontalAlignment: Qt.AlignHCenter
@@ -41,11 +43,17 @@ SpinBox {
         width: 20
         height: root.height - 2
         radius: 2
-        color: root.down.pressed ? Theme.colors.selection : Theme.colors.control
+        color: !root.down.enabled ? Theme.colors.panel
+             : root.down.pressed ? Theme.colors.selection
+             : minusHover.hovered ? Theme.colors.hover : Theme.colors.control
+        HoverHandler {
+            id: minusHover
+            cursorShape: root.down.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+        }
         Text {
             anchors.centerIn: parent
             text: "−"
-            font.pixelSize: 15
+            font.pixelSize: 14
             color: root.down.enabled ? Theme.colors.text : Theme.colors.disabled
         }
     }
@@ -56,11 +64,17 @@ SpinBox {
         width: 20
         height: root.height - 2
         radius: 2
-        color: root.up.pressed ? Theme.colors.selection : Theme.colors.control
+        color: !root.up.enabled ? Theme.colors.panel
+             : root.up.pressed ? Theme.colors.selection
+             : plusHover.hovered ? Theme.colors.hover : Theme.colors.control
+        HoverHandler {
+            id: plusHover
+            cursorShape: root.up.enabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+        }
         Text {
             anchors.centerIn: parent
             text: "+"
-            font.pixelSize: 14
+            font.pixelSize: 13
             color: root.up.enabled ? Theme.colors.text : Theme.colors.disabled
         }
     }

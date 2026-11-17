@@ -68,7 +68,10 @@ set(engine_qml_files
     qml/components/ComponentInstallationActions.qml
     qml/inspectors/InspectorHost.qml
     qml/inspectors/GenericComponentInspector.qml
+    qml/inspectors/controls/InspectorActionButton.qml
+    qml/inspectors/controls/InspectorChangeList.qml
     qml/inspectors/controls/InspectorColorField.qml
+    qml/inspectors/controls/InspectorContrastMetric.qml
     qml/inspectors/controls/InspectorComboBox.qml
     qml/inspectors/controls/InspectorNumberField.qml
     qml/inspectors/controls/InspectorPropertyRow.qml
