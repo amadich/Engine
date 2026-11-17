@@ -4,15 +4,16 @@
   "category": ["Navigation"],
   "activation": "inspect",
   "inspector": "inspector/NavbarInspector.qml",
-  "configTarget": "src/components/navbar/navbar.config.json",
+  "legacyDirectory": "src/components/navbar",
+  "configTarget": "navbar.config.json",
   "files": [
     {
       "source": "template/EngineNavbar.tsx",
-      "target": "src/components/navbar/EngineNavbar.tsx"
+      "target": "EngineNavbar.tsx"
     },
     {
       "source": "template/navbar.config.json",
-      "target": "src/components/navbar/navbar.config.json"
+      "target": "navbar.config.json"
     }
   ]
 }

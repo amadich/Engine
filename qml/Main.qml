@@ -41,6 +41,13 @@ ApplicationWindow {
         return false
     }
 
+    function closeEditorsAfterComponentChange() {
+        // Saved tabs may still refer to the old paths after relocation/removal.
+        window.selectedFileUrl = ""
+        window.selectedFileDetails = ({})
+        workspace.editorWorkspace.reset()
+    }
+
     onClosing: function(close) {
         close.accepted = window.canLeaveProject()
     }
@@ -90,6 +97,37 @@ ApplicationWindow {
         id: componentManager
         projectController: projectController
         onLogMessage: function(message) { outputPanel.appendLog(message) }
+        onInstallRequested: function(componentId) {
+            componentInstallDialog.openForComponent(componentId)
+        }
+        onMoveRequested: function(componentId) {
+            componentMoveDialog.openForComponent(componentId)
+        }
+        onRemoveRequested: function(componentId) {
+            componentRemoveDialog.openForComponent(componentId)
+        }
+        onComponentMoved: function(componentId) { window.closeEditorsAfterComponentChange() }
+        onComponentRemoved: function(componentId) { window.closeEditorsAfterComponentChange() }
+    }
+
+    ComponentInstallDialog {
+        id: componentInstallDialog
+        controller: projectController
+        componentManager: componentManager
+    }
+
+    ComponentMoveDialog {
+        id: componentMoveDialog
+        controller: projectController
+        componentManager: componentManager
+        hasUnsavedChanges: workspace.editorWorkspace.hasUnsavedChanges
+    }
+
+    ComponentRemoveDialog {
+        id: componentRemoveDialog
+        controller: projectController
+        componentManager: componentManager
+        hasUnsavedChanges: workspace.editorWorkspace.hasUnsavedChanges
     }
 
     Connections {
@@ -161,15 +199,6 @@ ApplicationWindow {
             previewUrl: projectController.previewUrl
             devServerActive: projectController.devServerActive
 
-            canAddComponent: projectController.activeProjectPath !== ""
-                             && (!projectController.busy
-                                 || projectController.devServerActive)
-
-            onInstallComponentRequested: function(componentId) {
-                const error = componentManager.installComponent(componentId)
-                if (error)
-                    outputPanel.appendLog("Error: " + error)
-            }
             selectedFileDetails: window.selectedFileDetails
 
 

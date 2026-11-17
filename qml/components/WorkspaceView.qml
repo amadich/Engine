@@ -7,9 +7,6 @@ SplitView {
     property url previewUrl: ""
     property bool devServerActive: false
 
-    property bool canAddComponent: false
-    signal installComponentRequested(string componentId)
-
     property var selectedFileDetails: ({})
 
     required property ProjectController controller
@@ -23,11 +20,6 @@ SplitView {
     ComponentLibraryPanel {
         SplitView.preferredWidth: 260
         SplitView.minimumWidth: 180
-
-        canAddComponent: root.canAddComponent
-        onInstallComponentRequested: function(componentId) {
-            root.installComponentRequested(componentId)
-        }
 
         onComponentSelected: function(componentId) {
             root.selectedComponentId = componentId

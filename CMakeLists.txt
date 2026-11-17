@@ -35,7 +35,14 @@ qt_add_resources(appJeridiEngine engine_assets
     FILES
         assets/icons/cube.svg
         assets/icons/cube_blue.svg
+        assets/icons/cube_block.svg
+        assets/icons/warning_2.svg
+        assets/icons/preview.svg
+        assets/icons/search.svg
+        assets/icons/star.svg
+        assets/icons/user.svg
         assets/icons/folder.svg
+        assets/icons/folder_1.svg
         assets/icons/file.svg
         assets/icons/image.svg
         assets/icons/forest.svg
@@ -58,7 +65,17 @@ set(engine_qml_files
     qml/Main.qml
     qml/components/EngineToolbar.qml
     qml/components/WorkspaceView.qml
+    qml/components/ComponentInstallationActions.qml
     qml/inspectors/InspectorHost.qml
+    qml/inspectors/GenericComponentInspector.qml
+    qml/inspectors/controls/InspectorColorField.qml
+    qml/inspectors/controls/InspectorComboBox.qml
+    qml/inspectors/controls/InspectorNumberField.qml
+    qml/inspectors/controls/InspectorPropertyRow.qml
+    qml/inspectors/controls/InspectorScaffold.qml
+    qml/inspectors/controls/InspectorSection.qml
+    qml/inspectors/controls/InspectorTextField.qml
+    qml/inspectors/controls/InspectorToggle.qml
     qml/panels/ComponentLibraryPanel.qml
     qml/panels/PreviewPanel.qml
     qml/panels/InspectorPanel.qml
@@ -71,6 +88,11 @@ set(engine_qml_files
     qml/dialogs/PreferencesDialog.qml
     qml/panels/EditorWorkspace.qml
     qml/dialogs/QuickOpenDialog.qml
+    qml/dialogs/ComponentInstallDialog.qml
+    qml/dialogs/ComponentMoveDialog.qml
+    qml/dialogs/ComponentRemoveDialog.qml
+    qml/dialogs/ComponentActionDialog.qml
+    qml/dialogs/ComponentDestinationPicker.qml
     qml/panels/EditorContextMenu.qml
 
     qml/panels/EditorTabBar.qml
@@ -114,6 +136,12 @@ qt_add_qml_module(appJeridiEngine
         src/components/componentmanager.cpp
         src/components/componentinstaller.h
         src/components/componentinstaller.cpp
+        src/components/componentinstallationstore.h
+        src/components/componentinstallationstore.cpp
+        src/components/componentlifecycle.h
+        src/components/componentlifecycle.cpp
+        src/components/projectfoldermodel.h
+        src/components/projectfoldermodel.cpp
         src/infrastructure/processrunner.h
         src/infrastructure/processrunner.cpp
         src/infrastructure/projectfilesmodel.h
@@ -146,3 +174,20 @@ install(TARGETS appJeridiEngine
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# Opt-in regression suite. Does not change normal builds or require Qt6::Test.
+option(JERIDI_BUILD_COMPONENT_TESTS "Build component lifecycle regression tests" OFF)
+if(JERIDI_BUILD_COMPONENT_TESTS)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    enable_testing()
+    add_executable(component_lifecycle_tests
+        tests/component_lifecycle_tests.cpp
+        src/components/componentinstaller.cpp
+        src/components/componentinstallationstore.cpp
+        src/components/componentlifecycle.cpp
+    )
+    target_include_directories(component_lifecycle_tests PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/components")
+    target_link_libraries(component_lifecycle_tests PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME component_lifecycle_tests COMMAND component_lifecycle_tests)
+endif()

@@ -3,270 +3,304 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import JeridiEngine
 
-Rectangle {
+// Navbar settings stay package-local. Shared Inspector controls are in JeridiEngine.
+Item {
     id: root
-
     required property ProjectController controller
     required property ComponentManager componentManager
 
     property url configUrl: ""
     property string originalConfigText: ""
+    property var savedSettings: ({})
     property bool configLoaded: false
     property bool installed: false
     property string statusMessage: ""
+    property bool statusError: false
 
     readonly property var hexColor: /^#[0-9a-fA-F]{6}$/
-    readonly property bool readyToEdit: configLoaded && installed
     readonly property bool canWrite: controller.activeProjectPath !== ""
-                                     && (!controller.busy
-                                         || controller.devServerActive)
-
-    color: Theme.colors.panel
-
-    Component.onCompleted: reloadConfig()
+                                     && (!controller.busy || controller.devServerActive)
+    readonly property bool dirty: configLoaded && (
+        brandInput.text !== String(savedSettings.brand ?? "My Website")
+        || widthInput.value !== Number(savedSettings.widthPercent ?? 100)
+        || heightInput.value !== Number(savedSettings.minHeight ?? 64)
+        || backgroundField.colorValue !== String(savedSettings.background ?? "#242831").toUpperCase()
+        || foregroundField.colorValue !== String(savedSettings.foreground ?? "#F1F4F9").toUpperCase()
+        || placementInput.currentIndex !== (savedSettings.placement === "sticky" ? 1 : 0)
+        || alignmentInput.currentIndex !== (["start", "center", "end"].indexOf(savedSettings.alignment ?? "end"))
+    )
 
     function reloadConfig() {
         configLoaded = false
-        installed = false
-        originalConfigText = ""
+        statusError = false
         statusMessage = ""
+        originalConfigText = ""
+        installed = componentManager.isInstalled("navbar")
         configUrl = componentManager.configurationUrl("navbar")
-
-        if (configUrl.toString() === "")
-            return
-
-        const details = controller.inspectFile(configUrl)
-
+        const details = installed
+                      ? controller.inspectFile(configUrl)
+                      : { kind: "text", text: componentManager.draftConfiguration("navbar") }
         if (details.error || details.kind !== "text" || details.truncated) {
-            statusMessage = "Use Add to Project to install the Navbar files."
+            statusError = true
+            statusMessage = String(details.error || "Unable to read Navbar settings.")
             return
         }
-
         try {
             const settings = JSON.parse(details.text)
-
             if (!settings || typeof settings !== "object" || Array.isArray(settings))
-                throw new Error("Expected a JSON object.")
-
-            brandInput.text = settings.brand ?? "My Website"
-            widthInput.value = settings.widthPercent ?? 100
-            heightInput.value = settings.minHeight ?? 64
-            backgroundInput.text = settings.background ?? "#242831"
-            foregroundInput.text = settings.foreground ?? "#F1F4F9"
+                throw new Error("Expected a JSON object")
+            brandInput.text = String(settings.brand ?? "My Website")
+            widthInput.value = Number(settings.widthPercent ?? 100)
+            heightInput.value = Number(settings.minHeight ?? 64)
+            backgroundField.colorValue = String(settings.background ?? "#242831").toUpperCase()
+            foregroundField.colorValue = String(settings.foreground ?? "#F1F4F9").toUpperCase()
+            backgroundField.resetEditor()
+            foregroundField.resetEditor()
             placementInput.currentIndex = settings.placement === "sticky" ? 1 : 0
             alignmentInput.currentIndex = settings.alignment === "start" ? 0
                                         : settings.alignment === "center" ? 1 : 2
-
             originalConfigText = details.text
+            savedSettings = {
+                brand: brandInput.text, widthPercent: widthInput.value,
+                minHeight: heightInput.value, background: backgroundField.colorValue,
+                foreground: foregroundField.colorValue,
+                placement: placementInput.currentIndex === 1 ? "sticky" : "flow",
+                alignment: ["start", "center", "end"][alignmentInput.currentIndex]
+            }
             configLoaded = true
+            if (!installed)
+                statusMessage = "Draft mode: Apply updates the preview, not project files."
         } catch (error) {
+            statusError = true
             statusMessage = "Invalid navbar.config.json: " + error.message
-        }
-
-        // The package manager knows which files belong to this component.
-        installed = componentManager.isInstalled("navbar")
-
-        if (configLoaded && !installed)
-            statusMessage = "Use Add to Project to install EngineNavbar.tsx."
-    }
-
-    Connections {
-        target: root.controller
-        function onActiveProjectChanged() { root.reloadConfig() }
-    }
-
-    Connections {
-        target: root.componentManager
-        function onComponentInstalled(componentId) {
-            if (componentId === "navbar")
-                root.reloadConfig()
         }
     }
 
     function applyConfig() {
-        const brand = brandInput.text.trim()
-        const background = backgroundInput.text.trim()
-        const foreground = foregroundInput.text.trim()
-
-        if (brand === "" || !hexColor.test(background)
-                || !hexColor.test(foreground)) {
-            statusMessage = "Enter a brand and two colors in #RRGGBB format."
+        if (!configLoaded || (installed && !canWrite)) return
+        if (!brandInput.text.trim() || backgroundField.invalidInput || foregroundField.invalidInput
+                || !hexColor.test(backgroundField.colorValue)
+                || !hexColor.test(foregroundField.colorValue)) {
+            statusError = true
+            statusMessage = "Brand and valid #RRGGBB colors are required."
             return
         }
-
-        const settings = JSON.parse(originalConfigText)
-        settings.brand = brand
-        settings.widthPercent = widthInput.value
-        settings.minHeight = heightInput.value
-        settings.background = background
-        settings.foreground = foreground
-        settings.placement = placementInput.currentIndex === 1 ? "sticky" : "flow"
-        settings.alignment = ["start", "center", "end"][alignmentInput.currentIndex]
-
-        const nextText = JSON.stringify(settings, null, 2) + "\n"
-        const error = controller.saveTextFile(configUrl, originalConfigText, nextText)
-
-        if (error) {
-            statusMessage = error
-            return
+        try {
+            const settings = JSON.parse(originalConfigText)
+            settings.brand = brandInput.text.trim()
+            settings.widthPercent = widthInput.value
+            settings.minHeight = heightInput.value
+            settings.background = backgroundField.colorValue
+            settings.foreground = foregroundField.colorValue
+            settings.placement = placementInput.currentIndex === 1 ? "sticky" : "flow"
+            settings.alignment = ["start", "center", "end"][alignmentInput.currentIndex]
+            const nextText = JSON.stringify(settings, null, 2) + "\n"
+            const error = installed
+                ? controller.saveTextFile(configUrl, originalConfigText, nextText)
+                : componentManager.setDraftConfiguration("navbar", nextText)
+            if (error) {
+                statusError = true
+                statusMessage = error
+                return
+            }
+            originalConfigText = nextText
+            brandInput.text = settings.brand
+            savedSettings = {
+                brand: settings.brand, widthPercent: settings.widthPercent,
+                minHeight: settings.minHeight, background: settings.background,
+                foreground: settings.foreground, placement: settings.placement,
+                alignment: settings.alignment
+            }
+            statusError = false
+            statusMessage = installed ? "Navbar settings saved." : "Draft updated; no project files changed."
+        } catch (error) {
+            statusError = true
+            statusMessage = "Could not apply settings: " + error.message
         }
-
-        originalConfigText = nextText
-        statusMessage = "Navbar settings saved."
     }
 
-    ScrollView {
+    Component.onCompleted: reloadConfig()
+    Connections {
+        target: root.controller
+        function onActiveProjectChanged() { root.reloadConfig() }
+    }
+    Connections {
+        target: root.componentManager
+        function onComponentInstalled(id) { if (id === "navbar") root.reloadConfig() }
+        function onComponentMoved(id) { if (id === "navbar") root.reloadConfig() }
+        function onComponentRemoved(id) { if (id === "navbar") root.reloadConfig() }
+    }
+
+    InspectorScaffold {
         anchors.fill: parent
-        anchors.margins: 12
-        contentWidth: availableWidth
-        clip: true
+        controller: root.controller
+        componentManager: root.componentManager
+        componentId: "navbar"
+        componentName: "Navbar"
+        description: "React · Navigation"
+        installed: root.installed
+        dirty: root.dirty
+        statusMessage: root.statusMessage
+        statusIsError: root.statusError
+        canApply: root.configLoaded && root.dirty && (!root.installed || root.canWrite)
+                  && !backgroundField.invalidInput && !foregroundField.invalidInput
+        canReload: root.configLoaded || root.statusError
+        onApplyRequested: root.applyConfig()
+        onReloadRequested: root.reloadConfig()
 
-        ColumnLayout {
-            width: parent.width
-            spacing: 10
-
-            Label {
-                text: "INSPECTOR · NAVBAR"
-                font.bold: true
-                color: Theme.colors.accent
-            }
-
-            Label {
-                Layout.fillWidth: true
-                text: "src/components/navbar/EngineNavbar.tsx"
-                color: Theme.colors.muted
-                wrapMode: Text.WrapAnywhere
-            }
-
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 80
-
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 114
+            color: Theme.colors.canvas
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 7
+                Label {
+                    text: "SCHEMATIC PREVIEW"
+                    color: Theme.colors.muted
+                    font.pixelSize: 9
+                    font.bold: true
+                }
                 Rectangle {
-                    anchors.centerIn: parent
-                    width: parent.width * widthInput.value / 100
-                    height: Math.min(parent.height, heightInput.value / 2)
-                    radius: 5
-                    clip: true
-                    color: root.hexColor.test(backgroundInput.text.trim())
-                           ? backgroundInput.text.trim() : Theme.colors.control
-
-                    Label {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: parent.width * widthInput.value / 100
+                    Layout.preferredHeight: Math.min(63, Math.max(32, heightInput.value * 0.65))
+                    radius: 3
+                    color: root.hexColor.test(backgroundField.colorValue)
+                           ? backgroundField.colorValue : Theme.colors.control
+                    RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 6
-                        text: brandInput.text
-                        color: root.hexColor.test(foregroundInput.text.trim())
-                               ? foregroundInput.text.trim() : Theme.colors.text
-                        elide: Text.ElideRight
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: alignmentInput.currentIndex === 0
-                            ? Text.AlignLeft : alignmentInput.currentIndex === 1
-                            ? Text.AlignHCenter : Text.AlignRight
-                        font.bold: true
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 7
+                        Label {
+                            Layout.preferredWidth: parent.width * 0.38
+                            text: brandInput.text || "Brand"
+                            color: root.hexColor.test(foregroundField.colorValue)
+                                   ? foregroundField.colorValue : Theme.colors.text
+                            font.pixelSize: 10
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: "Home   About   Contact"
+                            color: root.hexColor.test(foregroundField.colorValue)
+                                   ? foregroundField.colorValue : Theme.colors.text
+                            font.pixelSize: 9
+                            elide: Text.ElideRight
+                            horizontalAlignment: alignmentInput.currentIndex === 0
+                                ? Text.AlignLeft : alignmentInput.currentIndex === 1
+                                ? Text.AlignHCenter : Text.AlignRight
+                        }
                     }
                 }
             }
+        }
 
-            GridLayout {
-                Layout.fillWidth: true
-                columns: 2
-                columnSpacing: 8
-                rowSpacing: 6
-                enabled: root.readyToEdit
-
-                Label { text: "Brand" }
-                TextField {
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Content"
+            iconSource: "qrc:/engine/assets/icons/file.svg"
+            InspectorPropertyRow {
+                caption: "Brand"
+                helpText: "Text shown on the left side of the navigation bar."
+                InspectorTextField {
                     id: brandInput
                     Layout.fillWidth: true
                     text: "My Website"
+                    enabled: root.configLoaded
                 }
+            }
+        }
 
-                Label { text: "Width (%)" }
-                SpinBox {
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Layout"
+            iconSource: "qrc:/engine/assets/icons/cube.svg"
+            InspectorPropertyRow {
+                caption: "Width"
+                helpText: "Navbar width relative to its parent (25–100%)."
+                InspectorNumberField {
                     id: widthInput
                     Layout.fillWidth: true
-                    from: 25
-                    to: 100
-                    value: 100
-                    editable: true
+                    from: 25; to: 100; value: 100
+                    enabled: root.configLoaded
                 }
-
-                Label { text: "Min. height" }
-                SpinBox {
+                Label { text: "%"; font.pixelSize: 10; color: Theme.colors.muted }
+            }
+            InspectorPropertyRow {
+                caption: "Min. Height"
+                helpText: "CSS minimum height in pixels."
+                InspectorNumberField {
                     id: heightInput
                     Layout.fillWidth: true
-                    from: 40
-                    to: 160
-                    value: 64
-                    editable: true
+                    from: 40; to: 160; value: 64
+                    enabled: root.configLoaded
                 }
-
-                Label { text: "Background" }
-                TextField {
-                    id: backgroundInput
-                    Layout.fillWidth: true
-                    text: "#242831"
-                }
-
-                Label { text: "Text color" }
-                TextField {
-                    id: foregroundInput
-                    Layout.fillWidth: true
-                    text: "#F1F4F9"
-                }
-
-                Label { text: "Placement" }
-                ComboBox {
+                Label { text: "px"; font.pixelSize: 10; color: Theme.colors.muted }
+            }
+            InspectorPropertyRow {
+                caption: "Placement"
+                helpText: "Normal document flow or sticky at the top while scrolling."
+                InspectorComboBox {
                     id: placementInput
                     Layout.fillWidth: true
-                    model: ["Normal flow", "Sticky top"]
+                    model: ["Normal Flow", "Sticky Top"]
+                    enabled: root.configLoaded
                 }
-
-                Label { text: "Links" }
-                ComboBox {
+            }
+            InspectorPropertyRow {
+                caption: "Links Align"
+                helpText: "Alignment of the hard-coded Home/About/Contact links."
+                InspectorComboBox {
                     id: alignmentInput
                     Layout.fillWidth: true
                     model: ["Left", "Center", "Right"]
                     currentIndex: 2
+                    enabled: root.configLoaded
                 }
             }
+        }
 
-            Button {
-                Layout.fillWidth: true
-                visible: !root.installed
-                enabled: root.canWrite
-                text: "Add to Project"
-
-                onClicked: {
-                    const error = root.componentManager.installComponent("navbar")
-
-                    if (error)
-                        root.statusMessage = error
-                }
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Colors"
+            iconSource: "qrc:/engine/assets/icons/image.svg"
+            description: "Click a swatch for a live HSV color palette and HEX output."
+            InspectorColorField {
+                id: backgroundField
+                caption: "Background"
+                colorValue: "#242831"
+                enabled: root.configLoaded
             }
-
-            Button {
-                Layout.fillWidth: true
-                visible: root.installed
-                enabled: root.canWrite && root.readyToEdit
-                text: "Apply"
-                onClicked: root.applyConfig()
+            InspectorColorField {
+                id: foregroundField
+                caption: "Text Color"
+                colorValue: "#F1F4F9"
+                enabled: root.configLoaded
             }
+        }
 
-            Button {
-                Layout.fillWidth: true
-                visible: root.configUrl.toString() !== ""
-                text: "Reload settings"
-                onClicked: root.reloadConfig()
-            }
-
+        InspectorSection {
+            Layout.fillWidth: true
+            title: "Implementation Notes"
+            iconSource: "qrc:/engine/assets/icons/file.svg"
+            expanded: false
+            description: "A description of supported and unsupported settings."
             Label {
                 Layout.fillWidth: true
-                text: root.controller.activeProjectPath === ""
-                      ? "Open a React project to install this component."
-                      : root.statusMessage
-                visible: text !== ""
+                text: "The Home / About / Contact labels and destinations are currently defined in EngineNavbar.tsx. The Inspector can align them, but cannot edit their text or URLs yet."
                 color: Theme.colors.muted
+                font.pixelSize: 10
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: "Changes here affect navbar.config.json only."
+                color: Theme.colors.muted
+                font.pixelSize: 10
                 wrapMode: Text.WordWrap
             }
         }

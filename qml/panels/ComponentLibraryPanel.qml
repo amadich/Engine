@@ -6,8 +6,6 @@ import JeridiEngine
 Rectangle {
     id: root
 
-    property bool canAddComponent: false
-    signal installComponentRequested(string componentId)
     signal componentSelected(string componentId)
 
     color: Theme.colors.surface
@@ -49,9 +47,7 @@ Rectangle {
                 required property string componentId
                 required property string activation
 
-                readonly property bool canActivate:
-                    hasChildren || (componentId !== ""
-                                    && (activation !== "install" || root.canAddComponent))
+                readonly property bool canActivate: hasChildren || componentId !== ""
 
                 implicitHeight: 30
                 implicitWidth: libraryTree.width
@@ -103,8 +99,6 @@ Rectangle {
                     onTapped: {
                         if (entry.hasChildren) {
                             libraryTree.toggleExpanded(entry.row)
-                        } else if (entry.activation === "install") {
-                            root.installComponentRequested(entry.componentId)
                         } else if (entry.componentId !== "") {
                             root.componentSelected(entry.componentId)
                         }
