@@ -1,0 +1,9 @@
+{
+  "title": "Hello from JeridiEngine",
+  "description": "A reusable React card with editable settings.",
+  "background": "#FFFFFF",
+  "foreground": "#1F2937",
+  "borderRadius": 12,
+  "padding": 20,
+  "shadow": true
+}

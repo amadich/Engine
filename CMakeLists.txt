@@ -12,13 +12,22 @@ qt_add_executable(appJeridiEngine
     src/main.cpp
 )
 
-qt_add_resources(appJeridiEngine component_templates
-    PREFIX "/templates"
-    BASE "${CMAKE_CURRENT_SOURCE_DIR}/templates"
-    FILES
-        templates/react/engine-button/EngineButton.tsx
-        templates/react/navbar/EngineNavbar.tsx
-        templates/react/navbar/navbar.config.json
+# Package data is collected automatically. New packages only need their own files.
+file(GLOB_RECURSE component_package_files CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/component-packages/*"
+)
+set(component_package_assets ${component_package_files})
+list(FILTER component_package_assets EXCLUDE REGEX "\\.qml$")
+
+qt_add_resources(appJeridiEngine component_packages
+    PREFIX "/component-packages"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/component-packages"
+    FILES ${component_package_assets}
+)
+
+# Custom inspectors belong to their package, but compile into the QML module.
+file(GLOB_RECURSE component_inspectors CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/component-packages/*/inspector/*.qml"
 )
 
 qt_add_resources(appJeridiEngine engine_assets
@@ -26,7 +35,14 @@ qt_add_resources(appJeridiEngine engine_assets
     FILES
         assets/icons/cube.svg
         assets/icons/cube_blue.svg
+        assets/icons/cube_block.svg
+        assets/icons/warning_2.svg
+        assets/icons/preview.svg
+        assets/icons/search.svg
+        assets/icons/star.svg
+        assets/icons/user.svg
         assets/icons/folder.svg
+        assets/icons/folder_1.svg
         assets/icons/file.svg
         assets/icons/image.svg
         assets/icons/forest.svg
@@ -49,11 +65,49 @@ set(engine_qml_files
     qml/Main.qml
     qml/components/EngineToolbar.qml
     qml/components/WorkspaceView.qml
+    qml/components/ComponentInstallationActions.qml
+    qml/inspectors/InspectorHost.qml
+    qml/inspectors/GenericComponentInspector.qml
+    qml/inspectors/controls/InspectorActionButton.qml
+    qml/inspectors/controls/InspectorChangeList.qml
+    qml/inspectors/controls/InspectorColorField.qml
+    qml/inspectors/controls/InspectorContrastMetric.qml
+    qml/inspectors/controls/InspectorComboBox.qml
+    qml/inspectors/controls/InspectorNumberField.qml
+    qml/inspectors/controls/InspectorPropertyRow.qml
+    qml/inspectors/controls/InspectorScaffold.qml
+    qml/inspectors/controls/InspectorSection.qml
+    qml/inspectors/controls/InspectorTextField.qml
+    qml/inspectors/controls/InspectorToggle.qml
     qml/panels/ComponentLibraryPanel.qml
+    qml/panels/LibraryModel.js
+    qml/panels/library/LibraryToolbar.qml
+    qml/panels/library/LibraryIconButton.qml
+    qml/panels/library/LibraryFilterChip.qml
+    qml/panels/library/LibraryCategoryRow.qml
+    qml/panels/library/LibraryComponentRow.qml
+    qml/panels/library/LibraryDetails.qml
     qml/panels/PreviewPanel.qml
     qml/panels/InspectorPanel.qml
     qml/panels/OutputPanel.qml
+    qml/panels/output/OutputLogStore.qml
+    qml/panels/output/OutputLogRow.qml
+    qml/panels/output/OutputHeader.qml
+    qml/panels/output/OutputToolbar.qml
+    qml/panels/output/OutputFilters.qml
+    qml/panels/output/OutputFilterChip.qml
+    qml/panels/output/OutputIconButton.qml
+    qml/panels/output/OutputStatusBar.qml
+    qml/panels/output/OutputFormat.js
     qml/panels/ProjectFilesPanel.qml
+    qml/panels/projectfiles/ProjectExplorerFormat.js
+    qml/panels/projectfiles/ProjectExplorerIconButton.qml
+    qml/panels/projectfiles/ProjectExplorerActionButton.qml
+    qml/panels/projectfiles/ProjectExplorerFilterChip.qml
+    qml/panels/projectfiles/ProjectExplorerHeader.qml
+    qml/panels/projectfiles/ProjectExplorerActions.qml
+    qml/panels/projectfiles/ProjectExplorerFileRow.qml
+    qml/panels/projectfiles/ProjectExplorerDetails.qml
     qml/dialogs/CreateProjectDialog.qml
     qml/theme/DarkTheme.qml
     qml/theme/LightTheme.qml
@@ -61,29 +115,47 @@ set(engine_qml_files
     qml/dialogs/PreferencesDialog.qml
     qml/panels/EditorWorkspace.qml
     qml/dialogs/QuickOpenDialog.qml
+    qml/dialogs/ComponentInstallDialog.qml
+    qml/dialogs/ComponentMoveDialog.qml
+    qml/dialogs/ComponentRemoveDialog.qml
+    qml/dialogs/ComponentActionDialog.qml
+    qml/dialogs/ComponentDestinationPicker.qml
     qml/panels/EditorContextMenu.qml
 
     qml/panels/EditorTabBar.qml
     qml/panels/CodeEditorPane.qml
     qml/panels/CompletionList.qml
 
-    qml/panels/NavbarInspector.qml
-
     # OTHER TYPE (JS, JSON etc ...)
     qml/panels/EditorEditing.js
 
 )
+list(APPEND engine_qml_files ${component_inspectors})
 
 # Keep one QML module while organizing source files into folders.
 foreach(qml_file IN LISTS engine_qml_files)
-    get_filename_component(qml_name "${qml_file}" NAME)
-    set_source_files_properties("${qml_file}" PROPERTIES
-        QT_RESOURCE_ALIAS "${qml_name}"
-    )
+    if(IS_ABSOLUTE "${qml_file}")
+        file(RELATIVE_PATH package_qml_path
+            "${CMAKE_CURRENT_SOURCE_DIR}/component-packages" "${qml_file}")
+        set_source_files_properties("${qml_file}" PROPERTIES
+            QT_RESOURCE_ALIAS "packages/${package_qml_path}")
+    else()
+        get_filename_component(qml_name "${qml_file}" NAME)
+        set_source_files_properties("${qml_file}" PROPERTIES
+            QT_RESOURCE_ALIAS "${qml_name}")
+    endif()
 endforeach()
 
 set_source_files_properties(qml/theme/Theme.qml PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
+)
+
+# Temporarily skip QML ahead-of-time compilation
+# for ProjectFilesPanel while diagnosing the crash.
+set_source_files_properties(
+    qml/panels/ProjectFilesPanel.qml
+    PROPERTIES
+        QT_QML_SKIP_CACHEGEN TRUE
 )
 
 qt_add_qml_module(appJeridiEngine
@@ -93,6 +165,18 @@ qt_add_qml_module(appJeridiEngine
     SOURCES
         src/application/projectcontroller.h
         src/application/projectcontroller.cpp
+        src/components/componentregistry.h
+        src/components/componentregistry.cpp
+        src/components/componentmanager.h
+        src/components/componentmanager.cpp
+        src/components/componentinstaller.h
+        src/components/componentinstaller.cpp
+        src/components/componentinstallationstore.h
+        src/components/componentinstallationstore.cpp
+        src/components/componentlifecycle.h
+        src/components/componentlifecycle.cpp
+        src/components/projectfoldermodel.h
+        src/components/projectfoldermodel.cpp
         src/infrastructure/processrunner.h
         src/infrastructure/processrunner.cpp
         src/infrastructure/projectfilesmodel.h
@@ -102,6 +186,7 @@ qt_add_qml_module(appJeridiEngine
 
 target_include_directories(appJeridiEngine PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src/application"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/components"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/infrastructure"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/editor"
 )
@@ -124,3 +209,20 @@ install(TARGETS appJeridiEngine
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# Opt-in regression suite. Does not change normal builds or require Qt6::Test.
+option(JERIDI_BUILD_COMPONENT_TESTS "Build component lifecycle regression tests" OFF)
+if(JERIDI_BUILD_COMPONENT_TESTS)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    enable_testing()
+    add_executable(component_lifecycle_tests
+        tests/component_lifecycle_tests.cpp
+        src/components/componentinstaller.cpp
+        src/components/componentinstallationstore.cpp
+        src/components/componentlifecycle.cpp
+    )
+    target_include_directories(component_lifecycle_tests PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/components")
+    target_link_libraries(component_lifecycle_tests PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME component_lifecycle_tests COMMAND component_lifecycle_tests)
+endif()
