@@ -5,7 +5,7 @@ project(JeridiEngine VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebView)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebView Network)
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(appJeridiEngine
@@ -63,6 +63,11 @@ qt_add_resources(appJeridiEngine engine_assets
 
 set(engine_qml_files
     qml/Main.qml
+    qml/StartupLauncher.qml
+    qml/launcher/LauncherArtwork.qml
+    qml/launcher/LauncherSplash.qml
+    qml/launcher/LauncherWelcome.qml
+    qml/launcher/LauncherUpdatesPopup.qml
     qml/components/EngineToolbar.qml
     qml/components/WorkspaceView.qml
     qml/components/ComponentInstallationActions.qml
@@ -163,6 +168,8 @@ qt_add_qml_module(appJeridiEngine
     VERSION 1.0
     QML_FILES ${engine_qml_files}
     SOURCES
+        src/application/startupservice.h
+        src/application/startupservice.cpp
         src/application/projectcontroller.h
         src/application/projectcontroller.cpp
         src/components/componentregistry.h
@@ -196,6 +203,7 @@ target_link_libraries(appJeridiEngine PRIVATE
     Qt6::QuickControls2
     Qt6::QuickDialogs2
     Qt6::WebView
+    Qt6::Network
 )
 
 set_target_properties(appJeridiEngine PROPERTIES

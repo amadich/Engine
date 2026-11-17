@@ -16,6 +16,9 @@ ApplicationWindow {
     color: "transparent"
 
     readonly property bool maximized: visibility === Window.Maximized
+    property bool launcherVisible: true
+    StartupService { id: startupService }
+
     property url selectedFileUrl: ""
     property var selectedFileDetails: ({})
 
@@ -143,6 +146,7 @@ ApplicationWindow {
     }
 
     header: EngineToolbar {
+        visible: !window.launcherVisible
         id: engineToolbar
         hostWindow: window
         projectName: projectController.activeProjectName
@@ -180,10 +184,16 @@ ApplicationWindow {
         id: openProjectDialog
         title: "Open npm project folder"
 
-        onAccepted: projectController.openProject(selectedFolder)
+        onAccepted: {
+            if (projectController.openProject(selectedFolder)) {
+                startupService.rememberProject(selectedFolder)
+                window.launcherVisible = false
+            }
+        }
     }
 
     SplitView {
+        visible: !window.launcherVisible
         anchors.fill: parent
         orientation: Qt.Vertical
         anchors.margins: window.maximized ? 0 : 8
@@ -248,6 +258,24 @@ ApplicationWindow {
             cursorShape: Qt.SizeFDiagCursor
 
             onPressed: window.startSystemResize(Qt.BottomEdge | Qt.RightEdge)
+        }
+    }
+    StartupLauncher {
+        id: startupLauncher
+        anchors.fill: parent
+        z: 1000
+        visible: window.launcherVisible
+        startup: startupService
+        onEnterWorkspaceRequested: window.launcherVisible = false
+        onNewProjectRequested: {
+            window.launcherVisible = false
+            createProjectDialog.open()
+        }
+        onOpenProjectRequested: function(folder) {
+            if (projectController.openProject(folder)) {
+                startupService.rememberProject(folder)
+                window.launcherVisible = false
+            }
         }
     }
 }
