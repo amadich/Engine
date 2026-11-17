@@ -15,11 +15,20 @@ SplitView {
 
     property string selectedComponentId: ""
 
+    property bool canAddComponent: false
+
     orientation: Qt.Horizontal
 
     ComponentLibraryPanel {
         SplitView.preferredWidth: 260
         SplitView.minimumWidth: 180
+
+        canAddComponent: root.canAddComponent
+        componentManager: root.componentManager
+        selectedComponentId: root.selectedComponentId
+        onInstallComponentRequested: function(componentId) {
+            root.installComponentRequested(componentId)
+        }
 
         onComponentSelected: function(componentId) {
             root.selectedComponentId = componentId

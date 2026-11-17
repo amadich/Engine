@@ -10,6 +10,12 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Basic");
     QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
     QGuiApplication app(argc, argv);
+
+    // Application Identity
+    QCoreApplication::setOrganizationName("Jeridi");
+    QCoreApplication::setOrganizationDomain("jeridi.dev");
+    QCoreApplication::setApplicationName("JeridiEngine");
+
     QQmlApplicationEngine engine;
 
     QObject::connect(

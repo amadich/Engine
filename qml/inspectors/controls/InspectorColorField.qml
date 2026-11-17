@@ -346,7 +346,8 @@ RowLayout {
                             onClicked: {
                                 root.colorValue = modelData
                                 root.invalidInput = false
-                                palette.close()
+                                // palette.close()
+                                colorPickerPopup.close()
                             }
                         }
                     }

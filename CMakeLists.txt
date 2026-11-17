@@ -80,6 +80,13 @@ set(engine_qml_files
     qml/inspectors/controls/InspectorTextField.qml
     qml/inspectors/controls/InspectorToggle.qml
     qml/panels/ComponentLibraryPanel.qml
+    qml/panels/LibraryModel.js
+    qml/panels/library/LibraryToolbar.qml
+    qml/panels/library/LibraryIconButton.qml
+    qml/panels/library/LibraryFilterChip.qml
+    qml/panels/library/LibraryCategoryRow.qml
+    qml/panels/library/LibraryComponentRow.qml
+    qml/panels/library/LibraryDetails.qml
     qml/panels/PreviewPanel.qml
     qml/panels/InspectorPanel.qml
     qml/panels/OutputPanel.qml
