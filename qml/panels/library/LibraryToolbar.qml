@@ -44,8 +44,8 @@ Item {
                     Layout.preferredWidth: 30
                     Layout.preferredHeight: 30
                     radius: 6
-                    color: Theme.colors.control
-                    border.width: 1
+                    color: "Transparent" /*Theme.colors.control*/
+                    border.width: 0
                     border.color: Theme.colors.border
                     Image {
                         anchors.centerIn: parent
@@ -79,8 +79,8 @@ Item {
                     Layout.preferredWidth: Math.max(24, totalLabel.implicitWidth + 11)
                     Layout.preferredHeight: 22
                     radius: 5
-                    color: Theme.colors.control
-                    border.width: 1
+                    color: "Transparent" /*Theme.colors.control*/
+                    border.width: 0
                     border.color: Theme.colors.border
                     Label {
                         id: totalLabel

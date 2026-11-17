@@ -32,8 +32,8 @@ ColumnLayout {
                 Layout.preferredWidth: 34
                 Layout.preferredHeight: 34
                 radius: 7
-                color: Theme.colors.control
-                border.width: 1
+                color: "Transparent" /*Theme.colors.control*/
+                border.width: 0
                 border.color: Theme.colors.border
                 Image {
                     anchors.centerIn: parent

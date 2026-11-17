@@ -20,9 +20,9 @@ Rectangle {
             Layout.preferredWidth: 31
             Layout.preferredHeight: 31
             radius: 7
-            color: Theme.colors.control
+            color: "Transparent" /*Theme.colors.control*/
             border.color: Theme.colors.border
-            border.width: 1
+            border.width: 0
             Image {
                 anchors.centerIn: parent
                 width: 17
