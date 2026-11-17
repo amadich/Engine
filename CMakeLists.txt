@@ -90,6 +90,15 @@ set(engine_qml_files
     qml/panels/PreviewPanel.qml
     qml/panels/InspectorPanel.qml
     qml/panels/OutputPanel.qml
+    qml/panels/output/OutputLogStore.qml
+    qml/panels/output/OutputLogRow.qml
+    qml/panels/output/OutputHeader.qml
+    qml/panels/output/OutputToolbar.qml
+    qml/panels/output/OutputFilters.qml
+    qml/panels/output/OutputFilterChip.qml
+    qml/panels/output/OutputIconButton.qml
+    qml/panels/output/OutputStatusBar.qml
+    qml/panels/output/OutputFormat.js
     qml/panels/ProjectFilesPanel.qml
     qml/panels/projectfiles/ProjectExplorerFormat.js
     qml/panels/projectfiles/ProjectExplorerIconButton.qml
