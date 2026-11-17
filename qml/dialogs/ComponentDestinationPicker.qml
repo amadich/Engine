@@ -12,9 +12,9 @@ Rectangle {
     signal destinationEdited(string path)
 
     radius: 6
-    color: Theme.colors.surface
+    color: "Transparent" /*Theme.colors.surface*/
     border.color: Theme.colors.border
-    border.width: 1
+    border.width: 0
 
     ProjectFolderModel {
         id: folders

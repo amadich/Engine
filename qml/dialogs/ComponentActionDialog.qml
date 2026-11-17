@@ -105,7 +105,7 @@ Dialog {
                     Layout.preferredWidth: 38
                     Layout.preferredHeight: 38
                     radius: 5
-                    color: Theme.colors.control
+                    color: "Transparent" /*Theme.colors.control*/
                     Image {
                         anchors.centerIn: parent
                         width: 24; height: 24
@@ -143,7 +143,7 @@ Dialog {
                     Layout.preferredWidth: stateText.implicitWidth + 18
                     Layout.preferredHeight: 23
                     radius: 4
-                    color: Theme.colors.control
+                    color: "Transparent" /*Theme.colors.control*/
                     border.color: Theme.colors.border
                     Label {
                         id: stateText
