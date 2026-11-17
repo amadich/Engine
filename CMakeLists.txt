@@ -91,6 +91,14 @@ set(engine_qml_files
     qml/panels/InspectorPanel.qml
     qml/panels/OutputPanel.qml
     qml/panels/ProjectFilesPanel.qml
+    qml/panels/projectfiles/ProjectExplorerFormat.js
+    qml/panels/projectfiles/ProjectExplorerIconButton.qml
+    qml/panels/projectfiles/ProjectExplorerActionButton.qml
+    qml/panels/projectfiles/ProjectExplorerFilterChip.qml
+    qml/panels/projectfiles/ProjectExplorerHeader.qml
+    qml/panels/projectfiles/ProjectExplorerActions.qml
+    qml/panels/projectfiles/ProjectExplorerFileRow.qml
+    qml/panels/projectfiles/ProjectExplorerDetails.qml
     qml/dialogs/CreateProjectDialog.qml
     qml/theme/DarkTheme.qml
     qml/theme/LightTheme.qml
@@ -131,6 +139,14 @@ endforeach()
 
 set_source_files_properties(qml/theme/Theme.qml PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
+)
+
+# Temporarily skip QML ahead-of-time compilation
+# for ProjectFilesPanel while diagnosing the crash.
+set_source_files_properties(
+    qml/panels/ProjectFilesPanel.qml
+    PROPERTIES
+        QT_QML_SKIP_CACHEGEN TRUE
 )
 
 qt_add_qml_module(appJeridiEngine
