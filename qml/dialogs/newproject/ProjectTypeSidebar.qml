@@ -2,52 +2,52 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "ProjectProfiles.js" as Profiles
+import "WizardStyle.js" as S
 
 Rectangle {
     id: root
-    property string framework: ""
+    property string framework: "react-vite"
     signal frameworkSelected(string id)
+    color: S.side
 
-    color: "#181b23"
-
-    component FrameworkEntry: Rectangle {
+    component FrameworkEntry: Item {
         id: entry
         required property var definition
         property bool active: false
+        property bool matchesSearch: true
         signal chosen(string id)
-
         width: parent.width
-        height: 51
-        radius: 7
-        color: active ? "#2c466e" : hit.containsMouse ? "#292c38" : "transparent"
-        border.color: active ? "#4779c6" : "transparent"
+        height: visible ? 43 : 0
+        visible: matchesSearch
+        Rectangle { anchors.fill: parent; color: entry.active ? S.selected : hit.containsMouse ? S.hover : "transparent" }
+        Rectangle { width: 3; height: parent.height; color: S.accent; visible: entry.active }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
+            anchors.leftMargin: 12
             anchors.rightMargin: 10
-            spacing: 11
-            Label {
-                text: String(entry.definition.icon)
-                color: entry.active ? "#8dbdff" : "#939ab6"
-                font.pixelSize: 20
-                Layout.preferredWidth: 24
-                horizontalAlignment: Text.AlignHCenter
+            spacing: 10
+            WizardFrameworkIcon {
+                framework: entry.definition.id
+                Layout.preferredWidth: 23
+                Layout.preferredHeight: 23
             }
             ColumnLayout {
-                spacing: 2
                 Layout.fillWidth: true
+                spacing: 2
                 Label {
-                    Layout.fillWidth: true
-                    text: String(entry.definition.name)
-                    elide: Text.ElideRight
-                    color: "#eef2ff"
-                    font.pixelSize: 13
+                    text: entry.definition.name
+                    font.pixelSize: 12
                     font.weight: entry.active ? Font.DemiBold : Font.Normal
+                    color: entry.active ? "#ffffff" : S.text
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                 }
                 Label {
-                    text: String(entry.definition.detail)
-                    color: "#8690a5"
+                    text: entry.definition.detail
                     font.pixelSize: 10
+                    color: S.muted
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
                 }
             }
         }
@@ -56,66 +56,105 @@ Rectangle {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: entry.chosen(String(entry.definition.id))
+            onClicked: entry.chosen(entry.definition.id)
         }
     }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 8
-        Label { text: "PROJECT TYPES"; color: "#c6cadd"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.6 }
-        TextField {
-            id: searchField
+        spacing: 0
+        Rectangle {
             Layout.fillWidth: true
-            placeholderText: "⌕  Search frameworks"
-            font.pixelSize: 12
-            selectByMouse: true
-            color: "#f3f5fc"
-            background: Rectangle { radius: 7; color: "#232631"; border.color: searchField.activeFocus ? "#497bd0" : "#3c404d" }
+            Layout.preferredHeight: 41
+            color: S.side
+            Label {
+                anchors.left: parent.left
+                anchors.leftMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                text: "PROJECT TEMPLATES"
+                font.pixelSize: 10
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.7
+                color: S.muted
+            }
         }
-        Item { Layout.preferredHeight: 8 }
-        Label { text: "FRONTEND"; color: "#7e8cab"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.4 }
-        Column {
+        WizardInput {
+            id: search
             Layout.fillWidth: true
-            spacing: 4
-            Repeater {
-                model: Profiles.frontend
-                FrameworkEntry {
-                    required property var modelData
-                    definition: modelData
-                    active: root.framework === String(modelData.id)
-                    visible: searchField.text.trim() === "" ||
-                             String(modelData.name).toLowerCase().includes(searchField.text.toLowerCase())
-                    onChosen: function(id) { root.frameworkSelected(id) }
+            Layout.leftMargin: 10
+            Layout.rightMargin: 10
+            Layout.bottomMargin: 9
+            placeholderText: "Search templates..."
+        }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: S.line }
+        ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            Column {
+                width: root.width
+                spacing: 0
+                Item { width: parent.width; height: 12 }
+                Label {
+                    x: 13
+                    text: "FRONTEND"
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.6
+                    color: S.faint
+                    height: 25
+                }
+                Repeater {
+                    model: Profiles.frontend
+                    FrameworkEntry {
+                        required property var modelData
+                        definition: modelData
+                        active: root.framework === modelData.id
+                        matchesSearch: search.text.trim() === "" || (modelData.name + " " + modelData.detail).toLowerCase().includes(search.text.trim().toLowerCase())
+                        onChosen: function(id) { root.frameworkSelected(id) }
+                    }
+                }
+                Item { width: parent.width; height: 15 }
+                Label {
+                    x: 13
+                    text: "BACKEND"
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.6
+                    color: S.faint
+                    height: 25
+                }
+                Repeater {
+                    model: Profiles.backend
+                    FrameworkEntry {
+                        required property var modelData
+                        definition: modelData
+                        active: root.framework === modelData.id
+                        matchesSearch: search.text.trim() === "" || (modelData.name + " " + modelData.detail).toLowerCase().includes(search.text.trim().toLowerCase())
+                        onChosen: function(id) { root.frameworkSelected(id) }
+                    }
                 }
             }
         }
-        Item { Layout.preferredHeight: 12 }
-        Label { text: "BACKEND"; color: "#7e8cab"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.4 }
-        Column {
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: S.line }
+        ColumnLayout {
             Layout.fillWidth: true
+            Layout.margins: 12
             spacing: 4
-            Repeater {
-                model: Profiles.backend
-                FrameworkEntry {
-                    required property var modelData
-                    definition: modelData
-                    active: root.framework === String(modelData.id)
-                    visible: searchField.text.trim() === "" ||
-                             String(modelData.name).toLowerCase().includes(searchField.text.toLowerCase())
-                    onChosen: function(id) { root.frameworkSelected(id) }
-                }
+            RowLayout {
+                spacing: 6
+                Rectangle { Layout.preferredWidth: 6; Layout.preferredHeight: 6; radius: 3; color: S.success }
+                Label { text: "5 LOCAL GENERATORS"; color: S.text; font.pixelSize: 10; font.weight: Font.DemiBold }
             }
-        }
-        Item { Layout.fillHeight: true }
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: "#373b47" }
-        Label {
-            Layout.fillWidth: true
-            text: "Templates are stored locally. Package downloads are optional."
-            color: "#8b92a8"
-            font.pixelSize: 10
-            wrapMode: Text.WordWrap
+            Label {
+                Layout.fillWidth: true
+                text: "Templates are bundled with Jeridi Engine. Dependency downloads are optional."
+                wrapMode: Text.WordWrap
+                font.pixelSize: 10
+                lineHeight: 1.15
+                color: S.faint
+            }
         }
     }
 }

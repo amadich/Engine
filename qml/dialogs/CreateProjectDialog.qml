@@ -4,8 +4,10 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import JeridiEngine
 import "ProjectProfiles.js" as Profiles
+import "WizardStyle.js" as S
 
-// Multi-step project wizard. State and validation only; filesystem work stays in C++.
+// Native IDE project wizard. Project creation and validation stay in C++.
+// The UI only edits a declarative configuration map.
 Dialog {
     id: root
     required property ProjectController controller
@@ -16,23 +18,25 @@ Dialog {
     property url parentFolder: ""
     property string packageName: "com.example.demo"
     property string javaVersion: "17"
+    property string description: ""
+    property string serverPort: "3000"
     property string architecture: "standard"
     property var dependencies: []
     property bool initializeGit: false
     property bool installNow: false
+    property string selectedDependency: "router"
     property string inlineError: ""
 
     readonly property bool detailsValid:
         /^[a-z][a-z0-9_-]{0,63}$/.test(projectName.trim())
         && parentFolder.toString() !== ""
-        && (framework !== "spring-boot"
-            || /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(packageName.trim()))
-    readonly property bool canProceed: step !== 0 || detailsValid
+        && (framework !== "spring-boot" || /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$/.test(packageName.trim()))
+        && (!Profiles.isBackend(framework) || (/^\d+$/.test(serverPort) && Number(serverPort) >= 1024 && Number(serverPort) <= 65535))
 
     parent: Overlay.overlay
     anchors.centerIn: parent
-    width: Math.min(1010, parent ? parent.width - 28 : 1010)
-    height: Math.min(710, parent ? parent.height - 28 : 710)
+    width: Math.min(1240, parent ? parent.width - 24 : 1240)
+    height: Math.min(780, parent ? parent.height - 24 : 780)
     modal: true
     focus: true
     padding: 0
@@ -40,16 +44,20 @@ Dialog {
     header: Item { implicitHeight: 0 }
     footer: Item { implicitHeight: 0 }
     background: Rectangle {
-        radius: 13
-        color: "#202229"
-        border.color: "#464b57"
+        color: S.window
+        radius: 4
         border.width: 1
+        border.color: "#52555a"
     }
 
     function selectFramework(id) {
+        if (framework === id) return
         framework = id
         architecture = Profiles.isBackend(id) ? "layered" : "standard"
-        dependencies = id === "spring-boot" ? ["security", "validation"] : []
+        dependencies = []
+        serverPort = id === "spring-boot" ? "8080" : "3000"
+        const packages = Profiles.dependencyOptions(id)
+        selectedDependency = packages.length ? packages[0].key : ""
         installNow = false
         inlineError = ""
         step = 0
@@ -58,16 +66,17 @@ Dialog {
     function toggleDependency(id, checked) {
         const next = dependencies.slice()
         const index = next.indexOf(id)
-        if (checked && index === -1) next.push(id)
-        if (!checked && index >= 0) next.splice(index, 1)
+        if (checked && index < 0) next.push(id)
+        else if (!checked && index >= 0) next.splice(index, 1)
         dependencies = next
+        selectedDependency = id
     }
 
     function createProject() {
         inlineError = ""
         if (!detailsValid) {
             step = 0
-            inlineError = "Check project name, location and Java package."
+            inlineError = "Enter a valid name, location, Java package and server port."
             return
         }
         const success = controller.createConfiguredProject({
@@ -77,6 +86,8 @@ Dialog {
             architecture: architecture,
             packageName: packageName.trim(),
             javaVersion: javaVersion,
+            description: description.trim(),
+            serverPort: Profiles.isBackend(framework) ? Number(serverPort) : 0,
             dependencies: dependencies,
             initializeGit: initializeGit
         })
@@ -85,122 +96,129 @@ Dialog {
             return
         }
         root.close()
-        if (installNow && framework !== "html")
-            controller.installDependencies()
+        if (installNow && framework !== "html") controller.installDependencies()
     }
 
-    onOpened: {
-        step = 0
-        inlineError = ""
-    }
+    onOpened: { step = 0; inlineError = "" }
 
     FolderDialog {
         id: parentPicker
-        title: "Where should the new project be created?"
+        title: "Choose the parent folder for the new project"
         onAccepted: root.parentFolder = selectedFolder
-    }
-
-    component WizardButton: Button {
-        id: button
-        property bool emphasized: false
-        implicitHeight: 36
-        implicitWidth: 94
-        contentItem: Text {
-            text: button.text
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            color: button.enabled ? "#fff" : "#8b91a1"
-            font.pixelSize: 12
-            font.weight: Font.DemiBold
-        }
-        background: Rectangle {
-            radius: 7
-            color: !button.enabled ? "#30343e"
-                 : button.down ? "#1d5397"
-                 : button.emphasized ? (button.hovered ? "#4a91f7" : "#3479df")
-                 : button.hovered ? "#424854" : "#343942"
-            border.color: button.emphasized && button.enabled ? "#5e9bf0" : "#515766"
-        }
     }
 
     contentItem: ColumnLayout {
         spacing: 0
+        // Compact title bar: native-tool feel, no decorative cards.
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 63
-            color: "#24272e"
-            radius: 13
+            Layout.preferredHeight: 48
+            color: S.surface
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 23
-                anchors.rightMargin: 17
-                spacing: 12
-                Label { text: "✦"; color: "#a89aff"; font.pixelSize: 23 }
-                Label { text: "New Project"; color: "#f8f9fc"; font.pixelSize: 19; font.weight: Font.DemiBold }
+                anchors.leftMargin: 16
+                anchors.rightMargin: 13
+                spacing: 10
+                Image {
+                    source: "qrc:/engine/assets/icons/package.svg"
+                    sourceSize.width: 22
+                    sourceSize.height: 22
+                    Layout.preferredWidth: 20
+                    Layout.preferredHeight: 20
+                    fillMode: Image.PreserveAspectFit
+                }
+                Label { text: "New Project"; color: S.title; font.pixelSize: 16; font.weight: Font.DemiBold }
+                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 17; color: S.line; Layout.leftMargin: 7; Layout.rightMargin: 5 }
+                Label { text: "JERIDI ENGINE  /  PROJECT GENERATOR"; color: S.muted; font.pixelSize: 10; font.letterSpacing: 0.6 }
                 Item { Layout.fillWidth: true }
-                Label { text: "JERIDI ENGINE / PROJECT GENERATOR"; color: "#858c9c"; font.pixelSize: 10; font.letterSpacing: 1 }
-                ToolButton {
-                    id: closeButton
+                Label { text: "v0.3"; color: S.faint; font.pixelSize: 10 }
+                WizardActionButton {
                     text: "✕"
+                    Layout.preferredWidth: 28
+                    implicitWidth: 28
                     onClicked: root.reject()
-                    background: Rectangle { radius: 6; color: closeButton.hovered ? "#373a43" : "transparent" }
                 }
             }
         }
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: "#3b3f49" }
-
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: S.line }
+        // Main body: template explorer | settings/package manager | contextual inspector.
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
             ProjectTypeSidebar {
-                Layout.preferredWidth: 246
+                Layout.preferredWidth: 213
                 Layout.fillHeight: true
                 framework: root.framework
                 onFrameworkSelected: function(id) { root.selectFramework(id) }
             }
-            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: "#373b45" }
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: S.line }
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.margins: 24
                 spacing: 0
-                RowLayout {
+                Rectangle {
                     Layout.fillWidth: true
-                    spacing: 12
-                    Repeater {
-                        model: ["PROJECT", "TOOLS", "REVIEW"]
-                        RowLayout {
-                            required property int index
-                            required property string modelData
-                            spacing: 6
-                            Rectangle {
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
-                                radius: 12
-                                color: index <= root.step ? "#3b75d3" : "#3a3e49"
-                                Label {
+                    Layout.preferredHeight: 40
+                    color: S.window
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 13
+                        anchors.rightMargin: 12
+                        spacing: 3
+                        Repeater {
+                            model: ["PROJECT", "STRUCTURE", "PACKAGES", "REVIEW"]
+                            Item {
+                                id: tab
+                                required property int index
+                                required property string modelData
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: tab.index === root.step ? "#34383d" : "transparent"
+                                }
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    height: 2
+                                    color: S.accent
+                                    visible: tab.index === root.step
+                                }
+                                RowLayout {
                                     anchors.centerIn: parent
-                                    text: index < root.step ? "✓" : String(index + 1)
-                                    font.pixelSize: 11
-                                    color: "white"
+                                    spacing: 7
+                                    Label {
+                                        text: String(tab.index + 1)
+                                        color: tab.index === root.step ? S.accent : S.faint
+                                        font.pixelSize: 10
+                                        font.weight: Font.DemiBold
+                                    }
+                                    Label {
+                                        text: tab.modelData
+                                        color: tab.index === root.step ? S.title : S.muted
+                                        font.pixelSize: 10
+                                        font.weight: tab.index === root.step ? Font.DemiBold : Font.Normal
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: tab.index < root.step
+                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: { root.inlineError = ""; root.step = tab.index }
                                 }
                             }
-                            Label {
-                                text: modelData
-                                color: index === root.step ? "#e8ecff" : "#818a9d"
-                                font.pixelSize: 11
-                                font.weight: index === root.step ? Font.Bold : Font.Normal
-                            }
-                            Item { Layout.preferredWidth: 10 }
                         }
                     }
-                    Item { Layout.fillWidth: true }
                 }
-                Item { Layout.preferredHeight: 20 }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: S.line }
                 StackLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    Layout.leftMargin: 17
+                    Layout.rightMargin: 17
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 10
                     currentIndex: root.step
                     ProjectDetailsStep {
                         framework: root.framework
@@ -208,28 +226,38 @@ Dialog {
                         parentFolder: root.parentFolder
                         packageName: root.packageName
                         javaVersion: root.javaVersion
-                        onNameEdited: function(value) {
-                            root.projectName = value
-                        }
+                        description: root.description
+                        serverPort: root.serverPort
+                        onNameEdited: function(value) { root.projectName = value }
                         onPackageEdited: function(value) { root.packageName = value }
                         onJavaVersionEdited: function(value) { root.javaVersion = value }
+                        onDescriptionEdited: function(value) { root.description = value }
+                        onServerPortEdited: function(value) { root.serverPort = value }
                         onBrowseRequested: parentPicker.open()
                     }
                     ProjectOptionsStep {
                         framework: root.framework
                         architecture: root.architecture
-                        dependencies: root.dependencies
                         initializeGit: root.initializeGit
                         onArchitectureEdited: function(value) { root.architecture = value }
-                        onDependencyToggled: function(id, checked) { root.toggleDependency(id, checked) }
                         onGitToggled: function(value) { root.initializeGit = value }
+                    }
+                    ProjectDependenciesStep {
+                        framework: root.framework
+                        dependencies: root.dependencies
+                        selectedDependency: root.selectedDependency
+                        onDependencyToggled: function(id, checked) { root.toggleDependency(id, checked) }
+                        onPackageFocused: function(id) { root.selectedDependency = id }
                     }
                     ProjectReviewStep {
                         framework: root.framework
                         projectName: root.projectName
+                        parentFolder: root.parentFolder
                         architecture: root.architecture
                         packageName: root.packageName
                         javaVersion: root.javaVersion
+                        description: root.description
+                        serverPort: root.serverPort
                         dependencies: root.dependencies
                         initializeGit: root.initializeGit
                         installNow: root.installNow
@@ -237,41 +265,58 @@ Dialog {
                     }
                 }
             }
+            Rectangle { Layout.preferredWidth: 1; Layout.fillHeight: true; color: S.line }
+            ProjectWizardInspector {
+                Layout.preferredWidth: 242
+                Layout.fillHeight: true
+                framework: root.framework
+                projectName: root.projectName
+                architecture: root.architecture
+                packageName: root.packageName
+                javaVersion: root.javaVersion
+                dependencies: root.dependencies
+                step: root.step
+                selectedDependency: root.selectedDependency
+            }
         }
-
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: "#41454f" }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: S.line }
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 67
-            color: "#24272e"
-            radius: 12
+            Layout.preferredHeight: 55
+            color: S.surface
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 19
-                anchors.rightMargin: 19
-                spacing: 10
+                anchors.leftMargin: 15
+                anchors.rightMargin: 15
+                spacing: 8
+                Rectangle {
+                    Layout.preferredWidth: 7; Layout.preferredHeight: 7
+                    radius: 4
+                    color: root.inlineError ? S.error : root.detailsValid ? S.success : S.warning
+                }
                 Label {
                     Layout.fillWidth: true
-                    text: root.inlineError || (root.step === 0 && !root.detailsValid
-                          ? "Select a destination and enter a valid project name." : "")
-                    color: root.inlineError ? "#ff9b93" : "#8c95a8"
+                    text: root.inlineError || (root.detailsValid
+                        ? "Ready  ·  " + Profiles.displayName(root.framework) + "  ·  " + root.dependencies.length + " optional packages"
+                        : "Enter a valid project name and choose a location to continue.")
+                    color: root.inlineError ? S.error : S.muted
                     font.pixelSize: 11
                     elide: Text.ElideRight
                 }
-                WizardButton { text: "Cancel"; onClicked: root.reject() }
-                WizardButton {
+                WizardActionButton { text: "Cancel"; onClicked: root.reject() }
+                WizardActionButton {
                     text: "Back"
                     enabled: root.step > 0
                     onClicked: { root.inlineError = ""; root.step-- }
                 }
-                WizardButton {
-                    emphasized: true
-                    enabled: root.canProceed && !root.controller.busy
-                    text: root.step === 2 ? "Create Project" : "Next →"
-                    implicitWidth: root.step === 2 ? 140 : 105
+                WizardActionButton {
+                    primary: true
+                    implicitWidth: root.step === 3 ? 137 : 96
+                    text: root.step === 3 ? "Create Project" : "Next  →"
+                    enabled: (root.step !== 0 || root.detailsValid) && !root.controller.busy
                     onClicked: {
                         root.inlineError = ""
-                        if (root.step === 2) root.createProject()
+                        if (root.step === 3) root.createProject()
                         else root.step++
                     }
                 }

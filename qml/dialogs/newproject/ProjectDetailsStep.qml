@@ -2,143 +2,214 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "ProjectProfiles.js" as Profiles
+import "WizardStyle.js" as S
 
 Item {
     id: root
     required property string framework
     property string projectName: ""
     property url parentFolder: ""
-    property string packageName: ""
+    property string packageName: "com.example.demo"
     property string javaVersion: "17"
+    property string description: ""
+    property string serverPort: "8080"
+    property bool generalOpen: true
+    property bool runtimeOpen: true
     signal nameEdited(string value)
     signal packageEdited(string value)
     signal javaVersionEdited(string value)
+    signal descriptionEdited(string value)
+    signal serverPortEdited(string value)
     signal browseRequested()
+
+    readonly property bool spring: framework === "spring-boot"
+    readonly property bool backend: Profiles.isBackend(framework)
+    readonly property string parentPath: parentFolder.toString() ? decodeURIComponent(parentFolder.toString().replace("file://", "")) : ""
 
     ScrollView {
         anchors.fill: parent
         clip: true
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
         ColumnLayout {
-        width: root.width - 12
-        spacing: 15
-        Label {
-            text: "Configure " + Profiles.displayName(root.framework)
-            color: "#f3f5fc"
-            font.pixelSize: 23
-            font.weight: Font.DemiBold
-        }
-        Label {
-            text: "Set the basics of your project. Jeridi will generate the directory structure."
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-            color: "#929bb0"
-            font.pixelSize: 12
-        }
-        Item { Layout.preferredHeight: 5 }
-        Label { text: "PROJECT NAME"; color: "#c5c9d7"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.1 }
-        TextField {
-            id: nameField
-            Layout.fillWidth: true
-            Layout.preferredHeight: 40
-            text: root.projectName
-            selectByMouse: true
-            placeholderText: "my-project"
-            color: "white"
-            background: Rectangle { color: "#191c25"; radius: 7; border.color: nameField.activeFocus ? "#5489e9" : "#424652" }
-            onTextEdited: root.nameEdited(text)
-        }
-        Label { text: "LOCATION"; color: "#c5c9d7"; font.pixelSize: 10; font.weight: Font.Bold; font.letterSpacing: 1.1 }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 9
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 40
-                radius: 7
-                color: "#191c25"
-                border.color: "#424652"
-                Label {
-                    anchors.fill: parent
-                    anchors.margins: 10
-                    verticalAlignment: Text.AlignVCenter
-                    text: root.parentFolder.toString()
-                          ? decodeURIComponent(root.parentFolder.toString().replace("file://", ""))
-                          : "Choose a parent directory…"
-                    color: root.parentFolder.toString() ? "#e3e7f4" : "#777e91"
-                    font.pixelSize: 12
-                    elide: Text.ElideMiddle
-                }
-            }
-            Button {
-                text: "Browse…"
-                onClicked: root.browseRequested()
-            }
-        }
-        Label {
-            Layout.fillWidth: true
-            text: "The generated directory will be: " + (root.parentFolder.toString()
-                  ? decodeURIComponent(root.parentFolder.toString().replace("file://", "")) + "/" + root.projectName : "—")
-            color: "#7c879d"
-            font.pixelSize: 10
-            elide: Text.ElideMiddle
-        }
-        Item { Layout.preferredHeight: 4 }
-        Label {
-            visible: root.framework === "spring-boot"
-            text: "JAVA PACKAGE / GROUP ID"
-            color: "#c5c9d7"
-            font.pixelSize: 10
-            font.weight: Font.Bold
-            font.letterSpacing: 1.1
-        }
-        TextField {
-            id: groupField
-            visible: root.framework === "spring-boot"
-            Layout.fillWidth: true
-            Layout.preferredHeight: 40
-            text: root.packageName
-            selectByMouse: true
-            color: "white"
-            placeholderText: "com.example.demo"
-            background: Rectangle { color: "#191c25"; radius: 7; border.color: groupField.activeFocus ? "#5489e9" : "#424652" }
-            onTextEdited: root.packageEdited(text)
-        }
-        Label {
-            visible: root.framework === "spring-boot"
-            text: "JAVA TARGET"
-            color: "#c5c9d7"
-            font.pixelSize: 10
-            font.weight: Font.Bold
-        }
-        ComboBox {
-            visible: root.framework === "spring-boot"
-            Layout.preferredWidth: 180
-            model: ["17 (LTS)", "21 (LTS)"]
-            currentIndex: root.javaVersion === "21" ? 1 : 0
-            onActivated: function(index) { root.javaVersionEdited(index === 1 ? "21" : "17") }
-        }
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 68
-            radius: 8
-            color: "#222837"
-            border.color: "#303e53"
+            width: Math.max(0, root.width - 14)
+            spacing: 5
             RowLayout {
-                anchors.fill: parent
-                anchors.margins: 13
-                spacing: 12
-                Label { text: root.framework === "spring-boot" ? "☕" : root.framework === "express-ts" ? "◈" : "◆"; font.pixelSize: 24; color: "#8ab5ff" }
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                Layout.bottomMargin: 8
+                spacing: 11
+                WizardFrameworkIcon { framework: root.framework; Layout.preferredWidth: 30; Layout.preferredHeight: 30 }
                 ColumnLayout {
                     Layout.fillWidth: true
-                    Label { text: root.framework === "spring-boot" ? "Java " + root.javaVersion + " · Maven · JAR · Spring Boot 3.5.16"
-                                  : root.framework === "express-ts" ? "Node.js · TypeScript · Express 5"
-                                  : Profiles.displayName(root.framework); font.pixelSize: 12; color: "#e4ebfd" }
-                    Label { text: "Generated locally · editable project structure"; font.pixelSize: 10; color: "#939fb7" }
+                    spacing: 3
+                    Label { text: Profiles.displayName(root.framework); font.pixelSize: 19; font.weight: Font.DemiBold; color: S.title }
+                    Label { text: Profiles.get(root.framework).detail + "  ·  " + Profiles.get(root.framework).runtime; font.pixelSize: 11; color: S.muted }
+                }
+                Label { text: "OFFLINE TEMPLATE"; font.pixelSize: 9; color: S.success }
+            }
+            WizardSectionHeader {
+                Layout.fillWidth: true
+                title: "General Settings"
+                iconSource: "qrc:/engine/assets/icons/cog_tool_administration_control_edit_option.svg"
+                subtitle: "Project identity & location"
+                expanded: root.generalOpen
+                onToggled: root.generalOpen = !root.generalOpen
+            }
+            ColumnLayout {
+                visible: root.generalOpen
+                Layout.fillWidth: true
+                Layout.leftMargin: 12
+                Layout.rightMargin: 7
+                Layout.topMargin: 8
+                Layout.bottomMargin: 10
+                spacing: 7
+                WizardFormRow {
+                    label: "Project name"
+                    WizardInput {
+                        anchors.fill: parent
+                        text: root.projectName
+                        placeholderText: "my-project"
+                        onTextEdited: root.nameEdited(text)
+                    }
+                }
+                WizardFormRow {
+                    label: "Location"
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 6
+                        WizardInput {
+                            Layout.fillWidth: true
+                            readOnly: true
+                            text: root.parentPath
+                            placeholderText: "Select a parent directory..."
+                            ToolTip.visible: hovered && root.parentPath.length > 0
+                            ToolTip.text: root.parentPath
+                        }
+                        WizardActionButton {
+                            text: "Browse..."
+                            Layout.preferredWidth: 76
+                            onClicked: root.browseRequested()
+                        }
+                    }
+                }
+                WizardFormRow {
+                    label: "Description"
+                    WizardInput {
+                        anchors.fill: parent
+                        text: root.description
+                        placeholderText: "Optional project description"
+                        onTextEdited: root.descriptionEdited(text)
+                    }
+                }
+                WizardFormRow {
+                    label: "Template"
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 7
+                        WizardFrameworkIcon { framework: root.framework; Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
+                        Label { text: Profiles.displayName(root.framework); font.pixelSize: 12; color: S.text }
+                        Item { Layout.fillWidth: true }
+                        Label { text: Profiles.isBackend(root.framework) ? "Backend" : "Frontend"; font.pixelSize: 10; color: S.muted }
+                    }
                 }
             }
-        }
-        Item { Layout.fillHeight: true }
+            WizardSectionHeader {
+                Layout.fillWidth: true
+                title: "Runtime & Build"
+                iconSource: "qrc:/engine/assets/icons/server_square_update.svg"
+                subtitle: root.spring ? "Java / Maven" : root.framework === "express-ts" ? "Node.js / TypeScript" : "Toolchain"
+                expanded: root.runtimeOpen
+                onToggled: root.runtimeOpen = !root.runtimeOpen
+            }
+            ColumnLayout {
+                visible: root.runtimeOpen
+                Layout.fillWidth: true
+                Layout.leftMargin: 12
+                Layout.rightMargin: 7
+                Layout.topMargin: 8
+                Layout.bottomMargin: 8
+                spacing: 7
+                WizardFormRow {
+                    visible: root.spring
+                    label: "Group / Package"
+                    WizardInput {
+                        anchors.fill: parent
+                        text: root.packageName
+                        placeholderText: "com.example.demo"
+                        onTextEdited: root.packageEdited(text)
+                    }
+                }
+                WizardFormRow {
+                    visible: root.spring
+                    label: "Java target"
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 8
+                        WizardCombo {
+                            Layout.preferredWidth: 130
+                            model: ["Java 17 (LTS)", "Java 21 (LTS)"]
+                            currentIndex: root.javaVersion === "21" ? 1 : 0
+                            onActivated: function(index) { root.javaVersionEdited(index === 1 ? "21" : "17") }
+                        }
+                        Label { text: "Maven · JAR"; font.pixelSize: 11; color: S.muted }
+                    }
+                }
+                WizardFormRow {
+                    visible: root.backend
+                    label: "Server port"
+                    RowLayout {
+                        anchors.fill: parent
+                        spacing: 8
+                        WizardInput {
+                            Layout.preferredWidth: 130
+                            text: root.serverPort
+                            validator: IntValidator { bottom: 1024; top: 65535 }
+                            inputMethodHints: Qt.ImhDigitsOnly
+                            onTextEdited: root.serverPortEdited(text)
+                        }
+                        Label { text: "1024–65535"; font.pixelSize: 10; color: S.muted }
+                    }
+                }
+                WizardFormRow {
+                    label: "Build system"
+                    Label {
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        text: root.spring ? "Apache Maven" : root.framework === "html" ? "None (static)" : "npm"
+                        font.pixelSize: 12
+                        color: S.text
+                    }
+                }
+                WizardFormRow {
+                    label: "Generator"
+                    Label {
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        text: root.spring ? "Spring Boot 3.5.16" : root.framework === "html" ? "HTML5" : "Local TypeScript template"
+                        font.pixelSize: 12
+                        color: S.text
+                    }
+                }
+            }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: S.line; Layout.topMargin: 8 }
+            Label {
+                Layout.fillWidth: true
+                Layout.topMargin: 8
+                Layout.leftMargin: 10
+                Layout.rightMargin: 10
+                text: "OUTPUT  " + (root.parentPath ? root.parentPath + "/" + (root.projectName || "<project>") : "Select a destination to preview the path")
+                font.pixelSize: 10
+                color: S.muted
+                elide: Text.ElideMiddle
+            }
+            Label {
+                Layout.fillWidth: true
+                Layout.leftMargin: 10
+                text: "The generator never overwrites an existing project directory."
+                font.pixelSize: 10
+                color: S.faint
+            }
+            Item { Layout.preferredHeight: 14 }
         }
     }
 }

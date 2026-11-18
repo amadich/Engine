@@ -1,5 +1,7 @@
 # __NAME__
 
+__DESCRIPTION__
+
 Jeridi Engine / Express + TypeScript project.
 
 1. Run `npm install`.

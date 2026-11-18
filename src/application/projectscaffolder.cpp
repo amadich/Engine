@@ -57,14 +57,25 @@ bool writeNewFile(const QDir &root, const QString &relative, const QByteArray &b
 
 QString springDependencyXml(const QStringList &items)
 {
+    // Only known Maven coordinates may be written to a generated pom.xml.
     const QMap<QString, QStringList> packages {
-        {"security", {"spring-boot-starter-security",
-                       "spring-boot-starter-oauth2-resource-server"}},
+        {"security", {"spring-boot-starter-security", "spring-boot-starter-oauth2-resource-server"}},
         {"validation", {"spring-boot-starter-validation"}},
-        {"actuator", {"spring-boot-starter-actuator"}}
+        {"actuator", {"spring-boot-starter-actuator"}},
+        {"data-jpa", {"spring-boot-starter-data-jpa"}},
+        {"devtools", {"spring-boot-devtools"}},
+        {"cache", {"spring-boot-starter-cache"}}
     };
     QString xml;
     for (const QString &item : items) {
+        if (item == "postgresql") {
+            xml += QStringLiteral("    <dependency>\n"
+                                  "      <groupId>org.postgresql</groupId>\n"
+                                  "      <artifactId>postgresql</artifactId>\n"
+                                  "      <scope>runtime</scope>\n"
+                                  "    </dependency>\n");
+            continue;
+        }
         for (const QString &artifact : packages.value(item)) {
             xml += QStringLiteral("    <dependency>\n"
                                   "      <groupId>org.springframework.boot</groupId>\n"
@@ -75,14 +86,31 @@ QString springDependencyXml(const QStringList &items)
     return xml;
 }
 
-QString javascriptExtras(const QStringList &items, bool development)
+QString javascriptExtras(const QString &framework, const QStringList &items, bool development)
 {
-    // Add only vetted optional package entries; never interpolate package names.
+    // The IDs and versions are fixed here: user input never becomes package.json syntax.
+    const QMap<QString, QString> production {
+        {"cors", "\"cors\": \"^2.8.5\""},
+        {"helmet", "\"helmet\": \"^8.0.0\""},
+        {"morgan", "\"morgan\": \"^1.10.0\""},
+        {"axios", "\"axios\": \"^1.8.0\""},
+        {"router", framework == "vue-vite"
+            ? "\"vue-router\": \"^4.5.0\""
+            : "\"react-router-dom\": \"^7.0.0\""},
+        {"state", framework == "vue-vite"
+            ? "\"pinia\": \"^3.0.0\""
+            : "\"zustand\": \"^5.0.0\""}
+    };
+    const QMap<QString, QString> dev {
+        {"cors", "\"@types/cors\": \"^2.8.17\""},
+        {"morgan", "\"@types/morgan\": \"^1.9.9\""}
+    };
     QString result;
-    if (!development && items.contains("cors"))
-        result = ",\n    \"cors\": \"^2.8.5\"";
-    if (development && items.contains("cors"))
-        result = ",\n    \"@types/cors\": \"^2.8.17\"";
+    for (const QString &item : items) {
+        const QString entry = development ? dev.value(item) : production.value(item);
+        if (!entry.isEmpty())
+            result += ",\n    " + entry;
+    }
     return result;
 }
 
@@ -167,8 +195,11 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
     }
 
     const QMap<QString, QStringList> allowedExtras {
-        {"react-vite", {}}, {"vue-vite", {}}, {"html", {}},
-        {"express-ts", {"cors"}}, {"spring-boot", {"security", "validation", "actuator"}}
+        {"react-vite", {"router", "axios", "state"}},
+        {"vue-vite", {"router", "axios", "state"}},
+        {"html", {}},
+        {"express-ts", {"cors", "helmet", "morgan"}},
+        {"spring-boot", {"security", "validation", "actuator", "data-jpa", "postgresql", "devtools", "cache"}}
     };
     QSet<QString> seen;
     for (const QVariant &value : options.value("dependencies").toList()) {
@@ -183,6 +214,12 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
         }
     }
 
+    const int serverPort = options.value("serverPort",
+        result.framework == "spring-boot" ? 8080 : 3000).toInt();
+    if (result.kind == "backend" && (serverPort < 1024 || serverPort > 65535)) {
+        result.error = "Server port must be between 1024 and 65535.";
+        return result;
+    }
     result.projectPath = parent.absoluteFilePath(name);
     if (QFileInfo::exists(result.projectPath) || QFileInfo(result.projectPath).isSymLink()) {
         result.error = "A project with this name already exists in the destination.";
@@ -200,12 +237,18 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
         {"__JAVA_VERSION__", javaVersion},
         {"__CLASS_NAME__", toJavaClass(name)},
         {"__SPRING_DEPENDENCIES__", springDependencyXml(result.dependencies)},
-        {"__JS_EXTRAS__", javascriptExtras(result.dependencies, false)},
-        {"__JS_DEV_EXTRAS__", javascriptExtras(result.dependencies, true)},
+        {"__JS_EXTRAS__", javascriptExtras(result.framework, result.dependencies, false)},
+        {"__JS_DEV_EXTRAS__", javascriptExtras(result.framework, result.dependencies, true)},
+        {"__SERVER_PORT__", QString::number(serverPort)},
+        {"__DESCRIPTION__", options.value("description").toString().trimmed()},
         {"__CORS_IMPORT__", result.dependencies.contains("cors")
              ? "import cors from \"cors\";" : ""},
         {"__CORS_USE__", result.dependencies.contains("cors")
              ? "app.use(cors({ origin: process.env.CORS_ORIGIN || \"http://localhost:5173\" }));" : ""},
+        {"__HELMET_IMPORT__", result.dependencies.contains("helmet") ? "import helmet from \"helmet\";" : ""},
+        {"__HELMET_USE__", result.dependencies.contains("helmet") ? "app.use(helmet());" : ""},
+        {"__MORGAN_IMPORT__", result.dependencies.contains("morgan") ? "import morgan from \"morgan\";" : ""},
+        {"__MORGAN_USE__", result.dependencies.contains("morgan") ? "app.use(morgan(\"dev\"));" : ""},
         {"__HEALTH_IMPORT__", result.architecture == "layered"
              ? "routes/health" : "features/health/routes"}
     };
@@ -241,6 +284,8 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
         {"architecture", result.architecture},
         {"packageName", result.framework == "spring-boot" ? result.packageName : ""},
         {"javaVersion", result.framework == "spring-boot" ? javaVersion : ""},
+        {"serverPort", result.kind == "backend" ? serverPort : 0},
+        {"description", options.value("description").toString().trimmed()},
         {"dependencies", QJsonArray::fromStringList(result.dependencies)}
     };
     if (!project.mkpath(".jeridi")

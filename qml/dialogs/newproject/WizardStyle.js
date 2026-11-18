@@ -1,0 +1,17 @@
+.pragma library
+// Compact native IDE palette. Surfaces and separators, not outlined cards.
+var window = "#2b2d30"
+var side = "#242528"
+var surface = "#303236"
+var input = "#1f2023"
+var hover = "#393b40"
+var selected = "#33465d"
+var accent = "#4a91e8"
+var line = "#414348"
+var title = "#e5e7eb"
+var text = "#c6c9cf"
+var muted = "#9197a1"
+var faint = "#707783"
+var success = "#61b58c"
+var warning = "#dfb16b"
+var error = "#ef8a88"

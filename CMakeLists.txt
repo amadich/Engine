@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(JeridiEngine VERSION 0.2 LANGUAGES CXX)
+project(JeridiEngine VERSION 0.3 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -42,35 +42,17 @@ file(GLOB_RECURSE component_inspectors CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/component-packages/*/inspector/*.qml"
 )
 
+# Include icons by directory, including framework icons supplied later.
+# CONFIGURE_DEPENDS reconfigures when a new icon is added to assets/icons/.
+file(GLOB_RECURSE engine_icon_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/*.svg"
+)
+file(GLOB_RECURSE engine_logo_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/logos/*.svg"
+)
 qt_add_resources(appJeridiEngine engine_assets
     PREFIX "/engine"
-    FILES
-        assets/icons/cube.svg
-        assets/icons/cube_blue.svg
-        assets/icons/cube_block.svg
-        assets/icons/warning_2.svg
-        assets/icons/preview.svg
-        assets/icons/search.svg
-        assets/icons/star.svg
-        assets/icons/user.svg
-        assets/icons/folder.svg
-        assets/icons/folder_1.svg
-        assets/icons/file.svg
-        assets/icons/image.svg
-        assets/icons/forest.svg
-        assets/icons/save.svg
-        assets/icons/close.svg
-        assets/icons/copy.svg
-        assets/icons/cut.svg
-        assets/icons/paste.svg
-        assets/icons/redo.svg
-        assets/icons/undo.svg
-        assets/icons/trash.svg
-        assets/icons/select-all.svg
-        assets/logos/engine_logo.svg
-        assets/logos/engine_logo_blue.svg
-        assets/logos/engine_logo_green.svg
-        assets/logos/engine_logo_orange.svg
+    FILES ${engine_icon_files} ${engine_logo_files}
 )
 
 set(engine_qml_files
@@ -131,6 +113,16 @@ set(engine_qml_files
     qml/dialogs/newproject/ProjectDetailsStep.qml
     qml/dialogs/newproject/ProjectOptionsStep.qml
     qml/dialogs/newproject/ProjectReviewStep.qml
+    qml/dialogs/newproject/ProjectDependenciesStep.qml
+    qml/dialogs/newproject/ProjectWizardInspector.qml
+    qml/dialogs/newproject/WizardInput.qml
+    qml/dialogs/newproject/WizardCombo.qml
+    qml/dialogs/newproject/WizardActionButton.qml
+    qml/dialogs/newproject/WizardFormRow.qml
+    qml/dialogs/newproject/WizardSectionHeader.qml
+    qml/dialogs/newproject/WizardCheckRow.qml
+    qml/dialogs/newproject/WizardFrameworkIcon.qml
+    qml/dialogs/newproject/WizardStyle.js
     qml/theme/DarkTheme.qml
     qml/theme/LightTheme.qml
     qml/theme/Theme.qml
