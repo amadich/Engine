@@ -35,8 +35,6 @@ Rectangle {
     property bool searchLimited: false
 
     color: Theme.colors.panel
-    visible: engineToolbar.showProjectFiles
-    SplitView.fillWidth: !engineToolbar.showOutput
 
     Settings {
         id: explorerSettings

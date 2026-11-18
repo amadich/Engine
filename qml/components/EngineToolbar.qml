@@ -19,6 +19,9 @@ ToolBar {
     property bool devServerActive: false
     property bool showProjectFiles: true
     property bool showOutput: true
+    property bool showComponents: true
+    property bool showInspector: true
+    property bool showPreviewDock: false
 
     readonly property bool maximized: hostWindow.visibility === Window.Maximized
 
@@ -78,6 +81,9 @@ ToolBar {
             hasDirty: root.hasDirty
             showProjectFiles: root.showProjectFiles
             showOutput: root.showOutput
+            showComponents: root.showComponents
+            showInspector: root.showInspector
+            showPreviewDock: root.showPreviewDock
             projectFramework: root.projectFramework
             recentProjects: root.recentProjects
             onCommandRequested: function(command, payload) {

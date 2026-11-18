@@ -17,6 +17,9 @@ MenuBar {
     property bool hasDirty: false
     property bool showProjectFiles: true
     property bool showOutput: true
+    property bool showComponents: true
+    property bool showInspector: true
+    property bool showPreviewDock: false
     property string projectFramework: ""
     property var recentProjects: []
 
@@ -65,6 +68,9 @@ MenuBar {
     Shortcut { sequence: "Ctrl+,"; enabled: root.menuActive; onActivated: root.dispatch("preferences") }
     Shortcut { sequence: "Ctrl+1"; enabled: root.menuActive; onActivated: root.dispatch("toggleProjectFiles") }
     Shortcut { sequence: "Ctrl+2"; enabled: root.menuActive; onActivated: root.dispatch("toggleOutput") }
+    Shortcut { sequence: "Ctrl+3"; enabled: root.menuActive; onActivated: root.dispatch("toggleComponents") }
+    Shortcut { sequence: "Ctrl+4"; enabled: root.menuActive; onActivated: root.dispatch("toggleInspector") }
+    Shortcut { sequence: "Ctrl+5"; enabled: root.menuActive; onActivated: root.dispatch("togglePreviewDock") }
     Shortcut { sequence: "Ctrl+Shift+0"; enabled: root.menuActive; onActivated: root.dispatch("showAllPanels") }
     Shortcut { sequence: Qt.platform.os === "osx" ? "Meta+Tab" : "Ctrl+Tab"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("nextTab") }
     Shortcut { sequence: Qt.platform.os === "osx" ? "Meta+Shift+Tab" : "Ctrl+Shift+Tab"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("previousTab") }
@@ -141,9 +147,20 @@ MenuBar {
     EngineMenu {
         title: "View"
         EngineMenuSection { text: "WORKSPACE PANELS" }
+        EngineMenuItem { text: "Component Library"; iconName: "cube.svg"; checkable: true; checked: root.showComponents; shortcutLabel: root.key("⌘3", "Ctrl+3"); onTriggered: root.dispatch("toggleComponents") }
         EngineMenuItem { text: "Project Explorer"; iconName: "tree.svg"; checkable: true; checked: root.showProjectFiles; shortcutLabel: root.key("⌘1", "Ctrl+1"); onTriggered: root.dispatch("toggleProjectFiles") }
         EngineMenuItem { text: "Output Console"; iconName: "file.svg"; checkable: true; checked: root.showOutput; shortcutLabel: root.key("⌘2", "Ctrl+2"); onTriggered: root.dispatch("toggleOutput") }
-        EngineMenuItem { text: "Show Both Panels"; iconName: "cube_block.svg"; shortcutLabel: root.key("⇧⌘0", "Ctrl+Shift+0"); onTriggered: root.dispatch("showAllPanels") }
+        EngineMenuItem { text: "Inspector"; iconName: "cog_tool_administration_control_edit_option.svg"; checkable: true; checked: root.showInspector; shortcutLabel: root.key("⌘4", "Ctrl+4"); onTriggered: root.dispatch("toggleInspector") }
+        EngineMenuItem { text: "Live Preview Dock"; iconName: "preview.svg"; checkable: true; checked: root.showPreviewDock; shortcutLabel: root.key("⌘5", "Ctrl+5"); onTriggered: root.dispatch("togglePreviewDock") }
+        EngineMenuDivider { }
+        EngineMenuSection { text: "LAYOUT PRESETS" }
+        EngineMenuItem { text: "Default IDE Layout"; iconName: "cube_block.svg"; onTriggered: root.dispatch("layoutDefault") }
+        EngineMenuItem { text: "Code Focus"; iconName: "file.svg"; onTriggered: root.dispatch("layoutCode") }
+        EngineMenuItem { text: "Preview & Design"; iconName: "preview.svg"; onTriggered: root.dispatch("layoutPreview") }
+        EngineMenuItem { text: "Debug & Output"; iconName: "file.svg"; onTriggered: root.dispatch("layoutDebug") }
+        EngineMenuItem { text: "Focus / Restore Editor"; iconName: "file.svg"; onTriggered: root.dispatch("focusEditor") }
+        EngineMenuItem { text: "Show Core Panels"; iconName: "cube_block.svg"; shortcutLabel: root.key("⇧⌘0", "Ctrl+Shift+0"); onTriggered: root.dispatch("showAllPanels") }
+        EngineMenuItem { text: "Reset Workspace Layout"; iconName: "redo.svg"; onTriggered: root.dispatch("resetWorkspace") }
         EngineMenuDivider { }
         EngineMenuItem { text: "Preview"; iconName: "preview.svg"; enabled: root.hasProject; onTriggered: root.dispatch("preview") }
         EngineMenuSection { text: "EDITOR FONT" }

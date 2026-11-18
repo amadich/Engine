@@ -8,7 +8,6 @@ import JeridiEngine
 Rectangle {
     id: root
     color: Theme.colors.panel
-    visible: engineToolbar.showOutput
 
     property string searchText: ""
     property string activeFilter: "all"

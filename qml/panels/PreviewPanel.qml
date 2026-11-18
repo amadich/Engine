@@ -7,6 +7,7 @@ Rectangle {
 
     property url previewUrl: ""
     property bool devServerActive: false
+    property bool dockActive: true
 
     color: Theme.colors.surface
 
@@ -21,7 +22,7 @@ Rectangle {
     Loader {
         id: previewLoader
         anchors.fill: parent
-        active: root.previewUrl.toString() !== ""
+        active: root.dockActive && root.previewUrl.toString() !== ""
 
         sourceComponent: Component {
             WebView {

@@ -106,11 +106,25 @@ ApplicationWindow {
             copyToClipboard(projectController.localFilePath(editor.currentFileUrl))
             break
         case "copyProjectPath": copyToClipboard(projectController.activeProjectPath); break
-        case "toggleProjectFiles": engineToolbar.showProjectFiles = !engineToolbar.showProjectFiles; break
-        case "toggleOutput": engineToolbar.showOutput = !engineToolbar.showOutput; break
-        case "showAllPanels": engineToolbar.showProjectFiles = true; engineToolbar.showOutput = true; break
-        case "showOutput": engineToolbar.showOutput = true; break
-        case "preview": editor.showPreview(); break
+        case "toggleProjectFiles": workspace.togglePanel("files"); break
+        case "toggleOutput": workspace.togglePanel("output"); break
+        case "toggleComponents": workspace.togglePanel("components"); break
+        case "toggleInspector": workspace.togglePanel("inspector"); break
+        case "togglePreviewDock": workspace.togglePanel("preview"); break
+        case "showAllPanels":
+            workspace.setPanelVisible("components", true)
+            workspace.setPanelVisible("files", true)
+            workspace.setPanelVisible("output", true)
+            workspace.setPanelVisible("inspector", true)
+            break
+        case "showOutput": workspace.setPanelVisible("output", true); break
+        case "resetWorkspace": workspace.resetLayout(); break
+        case "focusEditor": workspace.focusPanel("editor"); break
+        case "layoutDefault": workspace.applyPreset("default"); break
+        case "layoutCode": workspace.applyPreset("code"); break
+        case "layoutPreview": workspace.applyPreset("preview"); break
+        case "layoutDebug": workspace.applyPreset("debug"); break
+        case "preview": workspace.restoreFocus(); editor.showPreview(); break
         case "nextTab": editor.nextTab(); break
         case "previousTab": editor.previousTab(); break
         case "zoomIn": editor.changeFontSize(1); break
@@ -120,11 +134,11 @@ ApplicationWindow {
         case "lightTheme": Theme.appearance = "light"; break
         case "run": projectController.startDevServer(); break
         case "stop": projectController.stopDevServer(); break
-        case "installDependencies": projectController.installDependencies(); engineToolbar.showOutput = true; break
-        case "checkNpm": projectController.checkNpm(); engineToolbar.showOutput = true; break
-        case "generateReact": projectController.generateReact(); engineToolbar.showOutput = true; break
-        case "clearOutput": outputPanel.clearOutput(); break
-        case "copyOutput": outputPanel.copyLog(false); break
+        case "installDependencies": projectController.installDependencies(); workspace.setPanelVisible("output", true); break
+        case "checkNpm": projectController.checkNpm(); workspace.setPanelVisible("output", true); break
+        case "generateReact": projectController.generateReact(); workspace.setPanelVisible("output", true); break
+        case "clearOutput": workspace.outputPanel.clearOutput(); break
+        case "copyOutput": workspace.outputPanel.copyLog(false); break
         case "revealProject": projectController.revealProjectFolder(); break
         case "projectInfo": projectInfoDialog.open(); break
         case "checkUpdates": updatesDialog.open(); startupService.checkUpdates(); break
@@ -224,7 +238,7 @@ ApplicationWindow {
     ComponentManager {
         id: componentManager
         projectController: projectController
-        onLogMessage: function(message) { outputPanel.appendLog(message) }
+        onLogMessage: function(message) { workspace.outputPanel.appendLog(message) }
         onInstallRequested: function(componentId) {
             componentInstallDialog.openForComponent(componentId)
         }
@@ -262,11 +276,11 @@ ApplicationWindow {
         target: projectController
 
         function onLogMessage(message) {
-            outputPanel.appendLog(message)
+            workspace.outputPanel.appendLog(message)
         }
 
         function onOutputReceived(text) {
-            outputPanel.appendOutput(text)
+            workspace.outputPanel.appendOutput(text)
         }
     }
 
@@ -283,6 +297,11 @@ ApplicationWindow {
         hasTextEditor: workspace.editorWorkspace.currentKind === "text"
         hasDirty: workspace.editorWorkspace.hasUnsavedChanges
         devServerActive: projectController.devServerActive
+        showProjectFiles: workspace.panelVisible("files")
+        showOutput: workspace.panelVisible("output")
+        showComponents: workspace.panelVisible("components")
+        showInspector: workspace.panelVisible("inspector")
+        showPreviewDock: workspace.panelVisible("preview")
         onMenuCommandRequested: function(command, payload) {
             window.handleMenuCommand(command, payload)
         }
@@ -308,76 +327,38 @@ ApplicationWindow {
         }
     }
 
-    SplitView {
+    WorkspaceView {
+        id: workspace
         visible: !window.launcherVisible
         anchors.fill: parent
-        orientation: Qt.Vertical
         anchors.margins: window.maximized ? 0 : 8
         anchors.topMargin: 0
-
-        WorkspaceView {
-            id: workspace
-            controller: projectController
-            componentManager: componentManager
-
-            SplitView.fillHeight: true
-            SplitView.minimumHeight: 300
-            previewUrl: projectController.previewUrl
-            devServerActive: projectController.devServerActive
-
-            selectedFileDetails: window.selectedFileDetails
-            onFileActivated: function(file) {
-                window.selectedFileUrl = file
-                window.selectedFileDetails = projectController.inspectFile(file)
-            }
+        controller: projectController
+        componentManager: componentManager
+        previewUrl: projectController.previewUrl
+        devServerActive: projectController.devServerActive
+        selectedFileDetails: window.selectedFileDetails
+        selectedFileUrl: window.selectedFileUrl
+        onFileActivated: function(file) {
+            window.selectedFileUrl = file
+            window.selectedFileDetails = projectController.inspectFile(file)
         }
-
-        SplitView {
-            orientation: Qt.Horizontal
-
-            SplitView.preferredHeight: 260
-            SplitView.minimumHeight: 140
-
-            ProjectFilesPanel {
-                SplitView.preferredWidth: 340
-                SplitView.minimumWidth: 220
-                visible: engineToolbar.showProjectFiles
-                SplitView.fillWidth: !engineToolbar.showOutput
-
-                projectFolder: projectController.projectFolderUrl
-                projectName: projectController.activeProjectName
-                selectedFile: window.selectedFileUrl
-
-                onFileSelected: function(file) {
-                    window.selectedFileUrl = file
-                    window.selectedFileDetails = projectController.inspectFile(file)
-                }
-
-                onFileOpenRequested: function(file) {
-                    workspace.editorWorkspace.openFile(file)
-                }
-            }
-
-            OutputPanel {
-                id: outputPanel
-
-                SplitView.fillWidth: true
-                SplitView.minimumWidth: 240
-            }
-        }
-
-        MouseArea {
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            width: 14
-            height: 14
-            z: 10
-            visible: !window.maximized
-            cursorShape: Qt.SizeFDiagCursor
-
-            onPressed: window.startSystemResize(Qt.BottomEdge | Qt.RightEdge)
+        onInstallComponentRequested: function(componentId) {
+            componentManager.requestInstall(componentId)
         }
     }
+
+    MouseArea {
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        width: 14
+        height: 14
+        z: 100
+        visible: !window.maximized && !window.launcherVisible
+        cursorShape: Qt.SizeFDiagCursor
+        onPressed: window.startSystemResize(Qt.BottomEdge | Qt.RightEdge)
+    }
+
     StartupLauncher {
         id: startupLauncher
         anchors.fill: parent
