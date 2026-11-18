@@ -13,6 +13,7 @@ MenuBar {
     property bool devServerActive: false
     property bool hasProject: false
     property bool hasEditor: false
+    property bool hasTextEditor: false
     property bool hasDirty: false
     property bool showProjectFiles: true
     property bool showOutput: true
@@ -52,14 +53,14 @@ MenuBar {
     Shortcut { sequence: "Ctrl+Shift+N"; enabled: root.menuActive && !root.busy; onActivated: root.dispatch("newProject") }
     Shortcut { sequence: "Ctrl+O"; enabled: root.menuActive && !root.busy; onActivated: root.dispatch("openProject") }
     Shortcut { sequence: "Ctrl+P"; enabled: root.menuActive && root.hasProject; onActivated: root.dispatch("quickOpen") }
-    Shortcut { sequence: "Ctrl+S"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("save") }
+    Shortcut { sequence: "Ctrl+S"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("save") }
     Shortcut { sequence: "Ctrl+Shift+S"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("saveAll") }
     Shortcut { sequence: "Ctrl+W"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("closeEditor") }
     Shortcut { sequence: "Ctrl+Shift+W"; enabled: root.menuActive && root.hasProject && !root.busy; onActivated: root.dispatch("closeProject") }
     Shortcut { sequence: "Ctrl+Q"; enabled: root.menuActive; onActivated: root.dispatch("quit") }
-    Shortcut { sequence: "Ctrl+F"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("find") }
-    Shortcut { sequence: "Ctrl+G"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("findNext") }
-    Shortcut { sequence: "Ctrl+L"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("goToLine") }
+    Shortcut { sequence: "Ctrl+F"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("find") }
+    Shortcut { sequence: "Ctrl+G"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("findNext") }
+    Shortcut { sequence: "Ctrl+L"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("goToLine") }
     Shortcut { sequence: "Ctrl+Alt+C"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("copyFilePath") }
     Shortcut { sequence: "Ctrl+,"; enabled: root.menuActive; onActivated: root.dispatch("preferences") }
     Shortcut { sequence: "Ctrl+1"; enabled: root.menuActive; onActivated: root.dispatch("toggleProjectFiles") }
@@ -67,9 +68,9 @@ MenuBar {
     Shortcut { sequence: "Ctrl+Shift+0"; enabled: root.menuActive; onActivated: root.dispatch("showAllPanels") }
     Shortcut { sequence: Qt.platform.os === "osx" ? "Meta+Tab" : "Ctrl+Tab"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("nextTab") }
     Shortcut { sequence: Qt.platform.os === "osx" ? "Meta+Shift+Tab" : "Ctrl+Shift+Tab"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("previousTab") }
-    Shortcut { sequence: "Ctrl+Plus"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("zoomIn") }
-    Shortcut { sequence: "Ctrl+Minus"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("zoomOut") }
-    Shortcut { sequence: "Ctrl+0"; enabled: root.menuActive && root.hasEditor; onActivated: root.dispatch("zoomReset") }
+    Shortcut { sequence: "Ctrl+Plus"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("zoomIn") }
+    Shortcut { sequence: "Ctrl+Minus"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("zoomOut") }
+    Shortcut { sequence: "Ctrl+0"; enabled: root.menuActive && root.hasTextEditor; onActivated: root.dispatch("zoomReset") }
     Shortcut { sequence: Qt.platform.os === "osx" ? "Meta+F5" : "Ctrl+F5"; enabled: root.menuActive && root.hasProject && !root.busy; onActivated: root.dispatch("run") }
     Shortcut { sequence: "Shift+F5"; enabled: root.menuActive && root.devServerActive; onActivated: root.dispatch("stop") }
     Shortcut { sequence: "Ctrl+Shift+K"; enabled: root.menuActive; onActivated: root.dispatch("shortcuts") }
@@ -100,7 +101,7 @@ MenuBar {
         EngineMenuDivider { }
         EngineMenuSection { text: "EDITOR" }
         EngineMenuItem { text: "Quick Open File…"; iconName: "search.svg"; shortcutLabel: root.key("⌘P", "Ctrl+P"); enabled: root.hasProject; onTriggered: root.dispatch("quickOpen") }
-        EngineMenuItem { text: "Save File"; iconName: "save.svg"; shortcutLabel: root.key("⌘S", "Ctrl+S"); enabled: root.hasEditor; onTriggered: root.dispatch("save") }
+        EngineMenuItem { text: "Save File"; iconName: "save.svg"; shortcutLabel: root.key("⌘S", "Ctrl+S"); enabled: root.hasTextEditor; onTriggered: root.dispatch("save") }
         EngineMenuItem { text: "Save All"; iconName: "check_badge.svg"; shortcutLabel: root.key("⇧⌘S", "Ctrl+Shift+S"); enabled: root.hasEditor && root.hasDirty; onTriggered: root.dispatch("saveAll") }
         EngineMenuDivider { }
         EngineMenuItem { text: "Close Editor"; iconName: "close.svg"; shortcutLabel: root.key("⌘W", "Ctrl+W"); enabled: root.hasEditor; onTriggered: root.dispatch("closeEditor") }
@@ -114,19 +115,22 @@ MenuBar {
     EngineMenu {
         title: "Edit"
         EngineMenuSection { text: "HISTORY" }
-        EngineMenuItem { text: "Undo"; iconName: "undo.svg"; shortcutLabel: root.key("⌘Z", "Ctrl+Z"); enabled: root.hasEditor; onTriggered: root.dispatch("undo") }
-        EngineMenuItem { text: "Redo"; iconName: "redo.svg"; shortcutLabel: root.key("⇧⌘Z", "Ctrl+Shift+Z"); enabled: root.hasEditor; onTriggered: root.dispatch("redo") }
+        EngineMenuItem { text: "Undo"; iconName: "undo.svg"; shortcutLabel: root.key("⌘Z", "Ctrl+Z"); enabled: root.hasTextEditor; onTriggered: root.dispatch("undo") }
+        EngineMenuItem { text: "Redo"; iconName: "redo.svg"; shortcutLabel: root.key("⇧⌘Z", "Ctrl+Shift+Z"); enabled: root.hasTextEditor; onTriggered: root.dispatch("redo") }
         EngineMenuDivider { }
         EngineMenuSection { text: "CLIPBOARD" }
-        EngineMenuItem { text: "Cut"; iconName: "cut.svg"; shortcutLabel: root.key("⌘X", "Ctrl+X"); enabled: root.hasEditor; onTriggered: root.dispatch("cut") }
-        EngineMenuItem { text: "Copy"; iconName: "copy.svg"; shortcutLabel: root.key("⌘C", "Ctrl+C"); enabled: root.hasEditor; onTriggered: root.dispatch("copy") }
-        EngineMenuItem { text: "Paste"; iconName: "paste.svg"; shortcutLabel: root.key("⌘V", "Ctrl+V"); enabled: root.hasEditor; onTriggered: root.dispatch("paste") }
-        EngineMenuItem { text: "Select All"; iconName: "select-all.svg"; shortcutLabel: root.key("⌘A", "Ctrl+A"); enabled: root.hasEditor; onTriggered: root.dispatch("selectAll") }
+        EngineMenuItem { text: "Cut"; iconName: "cut.svg"; shortcutLabel: root.key("⌘X", "Ctrl+X"); enabled: root.hasTextEditor; onTriggered: root.dispatch("cut") }
+        EngineMenuItem { text: "Copy"; iconName: "copy.svg"; shortcutLabel: root.key("⌘C", "Ctrl+C"); enabled: root.hasTextEditor; onTriggered: root.dispatch("copy") }
+        EngineMenuItem { text: "Paste"; iconName: "paste.svg"; shortcutLabel: root.key("⌘V", "Ctrl+V"); enabled: root.hasTextEditor; onTriggered: root.dispatch("paste") }
+        EngineMenuItem { text: "Select All"; iconName: "select-all.svg"; shortcutLabel: root.key("⌘A", "Ctrl+A"); enabled: root.hasTextEditor; onTriggered: root.dispatch("selectAll") }
         EngineMenuDivider { }
         EngineMenuSection { text: "SEARCH & NAVIGATE" }
-        EngineMenuItem { text: "Find in File…"; iconName: "search.svg"; shortcutLabel: root.key("⌘F", "Ctrl+F"); enabled: root.hasEditor; onTriggered: root.dispatch("find") }
-        EngineMenuItem { text: "Find Next"; iconName: "search.svg"; shortcutLabel: root.key("⌘G", "Ctrl+G"); enabled: root.hasEditor; onTriggered: root.dispatch("findNext") }
-        EngineMenuItem { text: "Go to Line…"; iconName: "file.svg"; shortcutLabel: root.key("⌘L", "Ctrl+L"); enabled: root.hasEditor; onTriggered: root.dispatch("goToLine") }
+        EngineMenuItem { text: "Find in File…"; iconName: "search.svg"; shortcutLabel: root.key("⌘F", "Ctrl+F"); enabled: root.hasTextEditor; onTriggered: root.dispatch("find") }
+        EngineMenuItem { text: "Find and Replace…"; iconName: "search.svg"; shortcutLabel: root.key("⌘R", "Ctrl+R"); enabled: root.hasTextEditor; onTriggered: root.dispatch("replace") }
+        EngineMenuItem { text: "Find Next"; iconName: "search.svg"; shortcutLabel: root.key("⌘G", "Ctrl+G"); enabled: root.hasTextEditor; onTriggered: root.dispatch("findNext") }
+        EngineMenuItem { text: "Toggle Line Comment"; iconName: "file.svg"; shortcutLabel: root.key("⌘/", "Ctrl+/"); enabled: root.hasTextEditor; onTriggered: root.dispatch("toggleComment") }
+        EngineMenuItem { text: "Code Completion"; iconName: "cube.svg"; shortcutLabel: root.key("⌃Space", "Ctrl+Space"); enabled: root.hasTextEditor; onTriggered: root.dispatch("complete") }
+        EngineMenuItem { text: "Go to Line…"; iconName: "file.svg"; shortcutLabel: root.key("⌘L", "Ctrl+L"); enabled: root.hasTextEditor; onTriggered: root.dispatch("goToLine") }
         EngineMenuDivider { }
         EngineMenuItem { text: "Copy File Path"; iconName: "copy.svg"; shortcutLabel: root.key("⌥⌘C", "Ctrl+Alt+C"); enabled: root.hasEditor; onTriggered: root.dispatch("copyFilePath") }
         EngineMenuItem { text: "Copy Project Path"; iconName: "folder.svg"; enabled: root.hasProject; onTriggered: root.dispatch("copyProjectPath") }
@@ -143,9 +147,9 @@ MenuBar {
         EngineMenuDivider { }
         EngineMenuItem { text: "Preview"; iconName: "preview.svg"; enabled: root.hasProject; onTriggered: root.dispatch("preview") }
         EngineMenuSection { text: "EDITOR FONT" }
-        EngineMenuItem { text: "Increase Font Size"; iconName: "file.svg"; shortcutLabel: root.key("⌘+", "Ctrl++"); enabled: root.hasEditor; onTriggered: root.dispatch("zoomIn") }
-        EngineMenuItem { text: "Decrease Font Size"; iconName: "file.svg"; shortcutLabel: root.key("⌘−", "Ctrl+-"); enabled: root.hasEditor; onTriggered: root.dispatch("zoomOut") }
-        EngineMenuItem { text: "Reset Font Size"; iconName: "redo.svg"; shortcutLabel: root.key("⌘0", "Ctrl+0"); enabled: root.hasEditor; onTriggered: root.dispatch("zoomReset") }
+        EngineMenuItem { text: "Increase Font Size"; iconName: "file.svg"; shortcutLabel: root.key("⌘+", "Ctrl++"); enabled: root.hasTextEditor; onTriggered: root.dispatch("zoomIn") }
+        EngineMenuItem { text: "Decrease Font Size"; iconName: "file.svg"; shortcutLabel: root.key("⌘−", "Ctrl+-"); enabled: root.hasTextEditor; onTriggered: root.dispatch("zoomOut") }
+        EngineMenuItem { text: "Reset Font Size"; iconName: "redo.svg"; shortcutLabel: root.key("⌘0", "Ctrl+0"); enabled: root.hasTextEditor; onTriggered: root.dispatch("zoomReset") }
         EngineMenuDivider { }
         EngineMenuSection { text: "APPEARANCE" }
         EngineMenuItem { text: "Dark Theme"; iconName: "cog_tool_administration_control_edit_option.svg"; checkable: true; checked: Theme.appearance === "dark"; onTriggered: root.dispatch("darkTheme") }
@@ -155,6 +159,10 @@ MenuBar {
     EngineMenu {
         title: "Navigate"
         EngineMenuSection { text: "PROJECT NAVIGATION" }
+        EngineMenuItem { text: "Go to Import Target"; iconName: "file.svg"; shortcutLabel: root.key("⌘B / F12", "Ctrl+B / F12"); enabled: root.hasTextEditor; onTriggered: root.dispatch("goToImport") }
+        EngineMenuItem { text: "File Imports"; iconName: "folder.svg"; enabled: root.hasTextEditor; onTriggered: root.dispatch("imports") }
+        EngineMenuItem { text: "File Outline"; iconName: "tree.svg"; enabled: root.hasTextEditor; onTriggered: root.dispatch("outline") }
+        EngineMenuDivider { }
         EngineMenuItem { text: "Quick Open File…"; iconName: "search.svg"; shortcutLabel: root.key("⌘P", "Ctrl+P"); enabled: root.hasProject; onTriggered: root.dispatch("quickOpen") }
         EngineMenuItem { text: "Next Editor Tab"; iconName: "file.svg"; shortcutLabel: root.key("⌃⇥", "Ctrl+Tab"); enabled: root.hasEditor; onTriggered: root.dispatch("nextTab") }
         EngineMenuItem { text: "Previous Editor Tab"; iconName: "file.svg"; shortcutLabel: root.key("⌃⇧⇥", "Ctrl+Shift+Tab"); enabled: root.hasEditor; onTriggered: root.dispatch("previousTab") }

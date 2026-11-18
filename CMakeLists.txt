@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(JeridiEngine VERSION 0.4.0 LANGUAGES CXX)
+project(JeridiEngine VERSION 0.5.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -147,6 +147,11 @@ set(engine_qml_files
     qml/panels/EditorTabBar.qml
     qml/panels/CodeEditorPane.qml
     qml/panels/CompletionList.qml
+    qml/panels/EditorActionBar.qml
+    qml/panels/EditorFindBar.qml
+    qml/panels/EditorNavigationPanel.qml
+    qml/panels/EditorImagePreview.qml
+    qml/panels/EditorIntelligence.js
 
     # OTHER TYPE (JS, JSON etc ...)
     qml/panels/EditorEditing.js

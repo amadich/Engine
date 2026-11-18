@@ -71,6 +71,11 @@ public:
                                      const QString &originalText,
                                      const QString &newText);
     Q_INVOKABLE QVariantList quickOpenFiles() const;
+    // Safe, project-scoped local import resolution (not a language server).
+    Q_INVOKABLE QVariantMap resolveImport(const QUrl &sourceFile,
+                                          const QString &specifier) const;
+    Q_INVOKABLE QStringList suggestImportPaths(const QUrl &sourceFile,
+                                               const QString &prefix) const;
 
 signals:
     void activeProjectChanged();

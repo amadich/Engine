@@ -27,13 +27,13 @@ Rectangle {
     function fileIcon(fileName) {
         const name = fileName.toLowerCase()
 
-        if (name.endsWith(".png") ||
-            name.endsWith(".jpg") ||
-            name.endsWith(".jpeg") ||
-            name.endsWith(".svg") ||
-            name.endsWith(".webp"))
-            return "image.svg"
-
+        if (/\.(png|jpe?g|svg|webp|gif|bmp)$/.test(name)) return "image.svg"
+        if (/\.(tsx|jsx)$/.test(name)) return "lang/react.svg"
+        if (/\.(ts|js)$/.test(name)) return "lang/javascript.svg"
+        if (name.endsWith(".vue")) return "lang/vuejs.svg"
+        if (name.endsWith(".html")) return "lang/html5.svg"
+        if (name.endsWith(".java")) return "lang/spring.svg"
+        if (name.endsWith(".json")) return "file.svg"
         return "file.svg"
     }
 
@@ -287,8 +287,11 @@ Rectangle {
 
                 TapHandler {
                     acceptedButtons: Qt.LeftButton
-
                     onTapped: root.tabRequested(tab.index)
+                }
+                TapHandler {
+                    acceptedButtons: Qt.MiddleButton
+                    onTapped: root.closeRequested(tab.index)
                 }
 
                 ToolTip.visible: tab.hovered

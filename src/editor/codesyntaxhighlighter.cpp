@@ -17,14 +17,15 @@ CodeSyntaxHighlighter::languageForFile(const QString &fileName)
         return Language::Script;
     }
 
-    if (suffix == "json")
-        return Language::Json;
+    if (suffix == "java" || suffix == "kt" || suffix == "cpp"
+        || suffix == "cc" || suffix == "h" || suffix == "hpp")
+        return Language::Code;
 
-    if (suffix == "css")
-        return Language::Css;
-
-    if (suffix == "html")
-        return Language::Html;
+    if (suffix == "qml") return Language::Qml;
+    if (suffix == "json") return Language::Json;
+    if (suffix == "css" || suffix == "scss") return Language::Css;
+    if (suffix == "html" || suffix == "vue" || suffix == "xml") return Language::Html;
+    if (suffix == "yml" || suffix == "yaml" || suffix == "properties") return Language::Config;
 
     return Language::PlainText;
 }
@@ -56,6 +57,18 @@ void CodeSyntaxHighlighter::highlightBlock(const QString &text)
         R"rx((?<comment>//.*|/\*.*?\*/)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(?<keyword>\b(?:import|export|from|default|const|let|function|return|type|interface|async|await|if|else|new|true|false|null|undefined)\b)|(?<name>(?<=<)/?[A-Za-z][\w.:-]*)|(?<number>\b\d+(?:\.\d+)?\b))rx"
         ));
 
+    static const QRegularExpression code(QStringLiteral(
+        R"rx((?<comment>//.*|/\*.*?\*/)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(?<keyword>\b(?:public|private|protected|static|final|abstract|class|interface|record|enum|package|import|new|return|void|const|constexpr|auto|namespace|struct|template|typename|virtual|override|if|else|for|while|switch|case|break|continue|throw|try|catch|true|false|nullptr|extends|implements|synchronized)\b)|(?<name>\b(?:Q_OBJECT|Q_PROPERTY|Q_INVOKABLE|QML_ELEMENT|QString|QObject|QVariant|String|Integer|Boolean|List|Map)\b)|(?<number>\b\d+(?:\.\d+)?\b))rx"
+        ));
+
+    static const QRegularExpression qml(QStringLiteral(
+        R"rx((?<comment>//.*|/\*.*?\*/)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(?<keyword>\b(?:import|property|readonly|signal|function|required|default|onClicked|onPressed|true|false|null|var|let|const|return)\b)|(?<name>\b(?:Item|Rectangle|Text|Label|Button|ListView|Repeater|Connections|Component|ColumnLayout|RowLayout|Qt)\b)|(?<number>\b\d+(?:\.\d+)?\b))rx"
+        ));
+
+    static const QRegularExpression config(QStringLiteral(
+        R"rx((?<comment>#.*)|(?<string>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(?<name>^[\w.-]+(?=\s*:|\s*=))|(?<keyword>\b(?:true|false|null|yes|no)\b)|(?<number>\b\d+(?:\.\d+)?\b))rx"
+        ));
+
     static const QRegularExpression json(QStringLiteral(
         R"rx((?<name>"(?:\\.|[^"\\])*"(?=\s*:))|(?<string>"(?:\\.|[^"\\])*")|(?<keyword>\b(?:true|false|null)\b)|(?<number>-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b))rx"
         ));
@@ -72,6 +85,9 @@ void CodeSyntaxHighlighter::highlightBlock(const QString &text)
 
     switch (m_language) {
     case Language::Script: pattern = &script; break;
+    case Language::Code:   pattern = &code;   break;
+    case Language::Qml:    pattern = &qml;    break;
+    case Language::Config: pattern = &config; break;
     case Language::Json:   pattern = &json;   break;
     case Language::Css:    pattern = &css;    break;
     case Language::Html:   pattern = &html;   break;

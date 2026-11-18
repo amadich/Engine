@@ -94,6 +94,12 @@ ApplicationWindow {
         case "paste": editor.pasteClipboard(); break
         case "selectAll": editor.selectAllText(); break
         case "find": editor.openFind(); break
+        case "replace": editor.openReplace(); break
+        case "toggleComment": editor.toggleComment(); break
+        case "complete": editor.requestCompletion(); break
+        case "imports": editor.showImports(); break
+        case "outline": editor.showOutline(); break
+        case "goToImport": editor.goToImportAtCaret(); break
         case "findNext": editor.findNext(false); break
         case "goToLine": editor.openGoToLine(); break
         case "copyFilePath":
@@ -274,6 +280,7 @@ ApplicationWindow {
         recentProjects: startupService.recentProjects
         busy: projectController.busy
         hasEditor: workspace.editorWorkspace.activeTab >= 0
+        hasTextEditor: workspace.editorWorkspace.currentKind === "text"
         hasDirty: workspace.editorWorkspace.hasUnsavedChanges
         devServerActive: projectController.devServerActive
         onMenuCommandRequested: function(command, payload) {
@@ -319,8 +326,10 @@ ApplicationWindow {
             devServerActive: projectController.devServerActive
 
             selectedFileDetails: window.selectedFileDetails
-
-
+            onFileActivated: function(file) {
+                window.selectedFileUrl = file
+                window.selectedFileDetails = projectController.inspectFile(file)
+            }
         }
 
         SplitView {

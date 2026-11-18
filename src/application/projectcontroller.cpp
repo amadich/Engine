@@ -8,6 +8,7 @@
 #include <QSaveFile>
 #include <QFile>
 #include <QDesktopServices>
+#include <QStringList>
 
 namespace {
 const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
@@ -15,15 +16,39 @@ const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
 
 namespace {
 
+constexpr qint64 kEditorLimit = 512 * 1024;
+
+bool isImageFile(const QString &suffix)
+{
+    static const QStringList extensions{"png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"};
+    return extensions.contains(suffix.toLower());
+}
+
+bool isInsideRoot(const QString &root, const QString &filePath)
+{
+    return !root.isEmpty() && !filePath.isEmpty()
+        && (filePath == root || filePath.startsWith(root + QDir::separator()));
+}
+
 bool isEditableTextFile(const QString &suffix)
 {
     static const QStringList extensions{
-        "tsx", "ts", "jsx", "js", "json", "css", "html",
-        "md", "txt", "qml", "cpp", "h", "java", "vue",
-        "xml", "properties", "yml", "yaml", "gradle", "kt"
+        "tsx", "ts", "jsx", "js", "mjs", "cjs", "json", "css", "scss", "html",
+        "md", "mdx", "txt", "qml", "cpp", "cc", "c", "h", "hpp", "java", "vue",
+        "xml", "properties", "yml", "yaml", "gradle", "kt", "py", "sh",
+        "sql", "toml", "swift", "gitignore"
     };
 
     return extensions.contains(suffix.toLower());
+}
+
+bool isEditableName(const QString &fileName)
+{
+    static const QStringList names{
+        "Dockerfile", "Makefile", "LICENSE", ".env", ".env.example",
+        ".gitignore", ".editorconfig", "Gemfile", "Procfile"
+    };
+    return names.contains(fileName, Qt::CaseInsensitive);
 }
 
 }
@@ -423,43 +448,26 @@ QVariantMap ProjectController::inspectFile(const QUrl &fileUrl) const
         {"kind", "file"}
     };
 
-    const QStringList imageExtensions{
-        "png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"
-    };
-
-    if (imageExtensions.contains(suffix)) {
+    if (isImageFile(suffix)) {
         details["kind"] = "image";
         details["imageUrl"] = QUrl::fromLocalFile(filePath);
         return details;
     }
 
-    if (isEditableTextFile(suffix)) {
-        const QStringList textExtensions{
-            "tsx", "ts", "jsx", "js", "json", "css", "html",
-            "md", "txt", "qml", "cpp", "h", "java", "vue",
-            "xml", "properties", "yml", "yaml", "gradle", "kt"
-        };
-
-        if (textExtensions.contains(suffix)) {
-            QFile file(filePath);
-
-            if (!file.open(QIODevice::ReadOnly)) {
-                details["error"] = file.errorString();
-                return details;
-            }
-
-            constexpr qint64 limit = 64 * 1024;
-            const QByteArray content = file.read(limit);
-
-            if (file.error() != QFileDevice::NoError) {
-                details["error"] = file.errorString();
-                return details;
-            }
-
-            details["kind"] = "text";
-            details["text"] = QString::fromUtf8(content);
-            details["truncated"] = !file.atEnd();
+    if (isEditableTextFile(suffix) || isEditableName(fileInfo.fileName())) {
+        QFile file(filePath);
+        if (!file.open(QIODevice::ReadOnly)) {
+            details["error"] = file.errorString();
+            return details;
         }
+        const QByteArray content = file.read(kEditorLimit);
+        if (file.error() != QFileDevice::NoError) {
+            details["error"] = file.errorString();
+            return details;
+        }
+        details["kind"] = "text";
+        details["text"] = QString::fromUtf8(content);
+        details["truncated"] = !file.atEnd();
     }
 
     return details;
@@ -497,8 +505,8 @@ QString ProjectController::saveTextFile(const QUrl &fileUrl,
 
     const QByteArray bytes = newText.toUtf8();
 
-    if (bytes.size() > 64 * 1024) {
-        return QStringLiteral("The editor supports files up to 64 KiB.");
+    if (bytes.size() > kEditorLimit) {
+        return QStringLiteral("The editor supports files up to 512 KiB.");
     }
 
     const QString path = QFileInfo(fileUrl.toLocalFile()).canonicalFilePath();
@@ -523,47 +531,136 @@ QString ProjectController::saveTextFile(const QUrl &fileUrl,
 
 QVariantList ProjectController::quickOpenFiles() const
 {
-    if (m_activeProjectPath.isEmpty()) {
-        return {};
-    }
+    if (m_activeProjectPath.isEmpty()) return {};
+    const QString root = QDir(m_activeProjectPath).canonicalPath();
+    if (root.isEmpty()) return {};
 
-    const QDir project(m_activeProjectPath);
-
-    if (!project.exists()) {
-        return {};
-    }
-
+    const QDir project(root);
     QVariantList results;
-    QStringList pendingFolders{project.absolutePath()};
-
-    while (!pendingFolders.isEmpty()) {
+    QStringList pendingFolders{root};
+    const QStringList skipped{ "node_modules", "target", "dist", "build", ".git",
+                               ".next", ".vite", "coverage", ".gradle", ".idea" };
+    while (!pendingFolders.isEmpty() && results.size() < 4000) {
         const QDir folder(pendingFolders.takeLast());
         const auto entries = folder.entryInfoList(
             QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks,
-            QDir::Name | QDir::IgnoreCase
-            );
-
+            QDir::Name | QDir::IgnoreCase);
         for (const QFileInfo &entry : entries) {
             if (entry.isDir()) {
-                if (entry.fileName() != "node_modules" && entry.fileName() != "target"
-                    && entry.fileName() != "dist" && entry.fileName() != "build") {
-                    pendingFolders.append(entry.absoluteFilePath());
-                }
+                if (!skipped.contains(entry.fileName())) pendingFolders.append(entry.absoluteFilePath());
                 continue;
             }
-
-            if (entry.size() > 64 * 1024
-                || !isEditableTextFile(entry.suffix())) {
-                continue;
-            }
-
+            const bool image = isImageFile(entry.suffix());
+            if ((!image && (entry.size() > kEditorLimit || !isEditableTextFile(entry.suffix()) && !isEditableName(entry.fileName())))
+                || results.size() >= 4000) continue;
             results.append(QVariantMap{
                 {"name", entry.fileName()},
                 {"path", project.relativeFilePath(entry.absoluteFilePath())},
-                {"url", QUrl::fromLocalFile(entry.absoluteFilePath())}
+                {"url", QUrl::fromLocalFile(entry.absoluteFilePath())},
+                {"kind", image ? "image" : "text"}
             });
         }
     }
-
     return results;
+}
+
+QVariantMap ProjectController::resolveImport(const QUrl &sourceFile,
+                                              const QString &specifier) const
+{
+    QVariantMap result{{"specifier", specifier}, {"status", "external"},
+                       {"kind", "dependency"}};
+    if (m_activeProjectPath.isEmpty()) return result;
+    const QString root = QDir(m_activeProjectPath).canonicalPath();
+    if (root.isEmpty() || !sourceFile.isLocalFile()) return result;
+    const QString source = QFileInfo(sourceFile.toLocalFile()).canonicalFilePath();
+    if (!isInsideRoot(root, source) || !QFileInfo(source).isFile()) return result;
+
+    QString path = specifier.trimmed();
+    if (path.isEmpty()) return result;
+    // Strip web-loader query and fragment suffixes (e.g. icon.svg?raw).
+    if (path.contains('?')) path = path.left(path.indexOf('?'));
+    if (path.contains('#')) path = path.left(path.indexOf('#'));
+    QString base;
+    if (path.startsWith("./") || path.startsWith("../")) {
+        base = QFileInfo(source).absoluteDir().absoluteFilePath(path);
+    } else if (path.startsWith("@/") || path.startsWith("~/")) {
+        base = QDir(root).filePath("src/" + path.mid(2));
+    } else if (path.startsWith('/')) {
+        base = QDir(root).filePath("public/" + path.mid(1));
+    } else if (source.endsWith(".java") && path.contains('.')) {
+        // Java imports use dotted package paths. Dependencies remain external.
+        base = QDir(root).filePath("src/main/java/" + QString(path).replace('.', '/'));
+    } else {
+        return result;
+    }
+
+    result["status"] = "missing";
+    result["kind"] = "missing";
+    const QStringList extensions{ "", ".ts", ".tsx", ".js", ".jsx", ".vue",
+        ".json", ".css", ".scss", ".html", ".qml", ".java", ".kt",
+        ".cpp", ".h", ".hpp", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif" };
+    const QStringList indexNames{ "/index.ts", "/index.tsx", "/index.js",
+                                  "/index.jsx", "/index.vue", "/index.qml" };
+    QStringList candidates;
+    for (const auto &ext : extensions) candidates.append(base + ext);
+    for (const auto &idx : indexNames) candidates.append(base + idx);
+
+    for (const QString &candidate : candidates) {
+        const QFileInfo info(candidate);
+        if (!info.isFile()) continue;
+        const QString canonical = info.canonicalFilePath();
+        if (!isInsideRoot(root, canonical)) continue;
+        result["status"] = "local";
+        result["kind"] = isImageFile(info.suffix()) ? "image" : "text";
+        result["name"] = info.fileName();
+        result["path"] = QDir(root).relativeFilePath(canonical);
+        result["url"] = QUrl::fromLocalFile(canonical);
+        return result;
+    }
+    if (source.endsWith(".java") && !specifier.startsWith('.')) {
+        result["status"] = "external";
+        result["kind"] = "dependency";
+    }
+    return result;
+}
+
+QStringList ProjectController::suggestImportPaths(const QUrl &sourceFile,
+                                                   const QString &prefix) const
+{
+    if (m_activeProjectPath.isEmpty()) return {};
+    const QString root = QDir(m_activeProjectPath).canonicalPath();
+    if (root.isEmpty() || !sourceFile.isLocalFile() || prefix.size() > 240)
+        return {};
+    const QString source = QFileInfo(sourceFile.toLocalFile()).canonicalFilePath();
+    if (!isInsideRoot(root, source) || !QFileInfo(source).isFile()) return {};
+    QString base;
+    if (prefix.startsWith("./") || prefix.startsWith("../"))
+        base = QFileInfo(source).absolutePath();
+    else if (prefix.startsWith("@/") || prefix.startsWith("~/"))
+        base = QDir(root).filePath("src");
+    else return {};
+
+    const int slash = prefix.lastIndexOf('/');
+    if (slash < 0) return {};
+    const QString folderSuffix = prefix.mid(prefix.startsWith("@/") || prefix.startsWith("~/") ? 2 : 0,
+                                             slash + 1 - (prefix.startsWith("@/") || prefix.startsWith("~/") ? 2 : 0));
+    // For relative imports keep the ./ or ../ directory prefix, for aliases remove @/.
+    const bool alias = prefix.startsWith("@/") || prefix.startsWith("~/");
+    const QString relativeFolder = alias ? folderSuffix : prefix.left(slash + 1);
+    const QString directoryPath = QDir(base).absoluteFilePath(relativeFolder);
+    const QString canonicalFolder = QDir(directoryPath).canonicalPath();
+    if (!isInsideRoot(root, canonicalFolder)) return {};
+    const QString needle = prefix.mid(slash + 1);
+    QStringList values;
+    const QDir dir(canonicalFolder);
+    const auto entries = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks,
+                                           QDir::DirsFirst | QDir::Name | QDir::IgnoreCase);
+    for (const QFileInfo &entry : entries) {
+        if (entry.fileName().startsWith('.') || entry.fileName() == "node_modules") continue;
+        if (!entry.fileName().startsWith(needle, Qt::CaseInsensitive)) continue;
+        if (!entry.isDir() && !isEditableTextFile(entry.suffix()) && !isEditableName(entry.fileName()) && !isImageFile(entry.suffix())) continue;
+        values.append(prefix.left(slash + 1) + entry.fileName() + (entry.isDir() ? "/" : ""));
+        if (values.size() >= 24) break;
+    }
+    return values;
 }

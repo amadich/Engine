@@ -12,6 +12,7 @@ SplitView {
     required property ProjectController controller
     required property ComponentManager componentManager
     property alias editorWorkspace: editorWorkspace
+    signal fileActivated(url file)
 
     property string selectedComponentId: ""
 
@@ -49,6 +50,7 @@ SplitView {
         controller: root.controller
         previewUrl: root.previewUrl
         devServerActive: root.devServerActive
+        onFileActivated: function(file) { root.fileActivated(file) }
     }
 
     // PreviewPanel {

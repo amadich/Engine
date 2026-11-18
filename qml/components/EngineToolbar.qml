@@ -13,6 +13,7 @@ ToolBar {
     property string projectFramework: ""
     property var recentProjects: []
     property bool hasEditor: false
+    property bool hasTextEditor: false
     property bool hasDirty: false
     property bool busy: false
     property bool devServerActive: false
@@ -73,6 +74,7 @@ ToolBar {
             devServerActive: root.devServerActive
             hasProject: root.projectPath !== ""
             hasEditor: root.hasEditor
+            hasTextEditor: root.hasTextEditor
             hasDirty: root.hasDirty
             showProjectFiles: root.showProjectFiles
             showOutput: root.showOutput

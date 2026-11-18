@@ -23,7 +23,7 @@ protected:
     void highlightBlock(const QString &text) override;
 
 private:
-    enum class Language { PlainText, Script, Json, Css, Html };
+    enum class Language { PlainText, Script, Code, Qml, Json, Css, Html, Config };
 
     static Language languageForFile(const QString &fileName);
 
