@@ -90,7 +90,7 @@ QString planFiles(const QString &projectPath, const QVariantMap &definition,
 bool sourceCodeFile(const QString &name)
 {
     static const QSet<QString> extensions = {
-        "js", "jsx", "ts", "tsx", "mjs", "cjs", "mts", "cts", "vue", "svelte", "astro", "mdx"
+        "js", "jsx", "ts", "tsx", "mjs", "cjs", "mts", "cts", "vue", "svelte", "astro", "mdx", "java"
     };
     return extensions.contains(QFileInfo(name).suffix().toLower());
 }
@@ -218,6 +218,19 @@ Analysis scanReferences(const QString &projectPath, const QVector<Relocation> &p
         }
         const QString content = QString::fromUtf8(original);
         const bool importerMoves = movedFiles.contains(file);
+        // Java imports and usages must be reviewed before removing a class.
+        // Never attempt to rewrite package declarations by treating them as JS imports.
+        if (removal && file.endsWith(".java") && !importerMoves) {
+            for (const QString &className : componentNames) {
+                if (className.endsWith(".java"))
+                    continue;
+                const QRegularExpression usage("\\b" + QRegularExpression::escape(className) + "\\b");
+                if (usage.match(content).hasMatch()) {
+                    result.references.append(file + " → Java class " + className);
+                    break;
+                }
+            }
+        }
         QString updated;
         int last = 0;
         bool changed = false;

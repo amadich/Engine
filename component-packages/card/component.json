@@ -1,5 +1,6 @@
 {
   "id": "card",
+  "frameworks": ["react-vite"],
   "name": "Card",
   "category": [
     "UI Components",

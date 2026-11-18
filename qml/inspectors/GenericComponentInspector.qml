@@ -35,7 +35,7 @@ Item {
         componentManager: root.componentManager
         componentId: root.componentId
         componentName: String(root.definition.name || "Component")
-        description: "React · Component package"
+        description: String(root.definition.description || "Framework-specific component package")
         installed: root.installed
         showApply: false
         showReload: false
@@ -44,7 +44,7 @@ Item {
             Layout.fillWidth: true
             title: "Package Contents"
             filterQuery: inspectorShell.filterText
-            filterKeywords: "files contents source package tsx json"
+            filterKeywords: "files contents source package java tsx vue json"
             iconSource: "qrc:/engine/assets/icons/file.svg"
             tag: String((root.definition.files || []).length) + " FILES"
             Repeater {

@@ -1,4 +1,6 @@
 #include "projectcontroller.h"
+#include "projectscaffolder.h"
+#include "componentregistry.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -16,7 +18,8 @@ bool isEditableTextFile(const QString &suffix)
 {
     static const QStringList extensions{
         "tsx", "ts", "jsx", "js", "json", "css", "html",
-        "md", "txt", "qml", "cpp", "h"
+        "md", "txt", "qml", "cpp", "h", "java", "vue",
+        "xml", "properties", "yml", "yaml", "gradle", "kt"
     };
 
     return extensions.contains(suffix.toLower());
@@ -137,11 +140,44 @@ bool ProjectController::createProject(const QString &projectName,
 
     m_activeProjectName = name;
     m_activeProjectPath = projectPath;
+    m_profile.clear();
     emit activeProjectChanged();
 
     emit logMessage("Project folder created: " + projectPath);
     emit projectCreated(name, projectPath);
     return true;
+}
+
+bool ProjectController::createConfiguredProject(const QVariantMap &options)
+{
+    if (busy()) {
+        m_lastProjectError = "Finish the current command before creating a project.";
+        emit lastProjectErrorChanged();
+        return false;
+    }
+    const auto result = ProjectScaffolder::create(options);
+    m_lastProjectError = result.error;
+    emit lastProjectErrorChanged();
+    if (!result.success()) {
+        emit logMessage("Project creation failed: " + result.error);
+        return false;
+    }
+    m_activeProjectPath = result.projectPath;
+    m_activeProjectName = QFileInfo(result.projectPath).fileName();
+    m_profile = ProjectScaffolder::detect(result.projectPath);
+    emit activeProjectChanged();
+    emit projectCreated(m_activeProjectName, result.projectPath);
+    emit logMessage("Created " + result.framework + " project: " + result.projectPath);
+    if (options.value("initializeGit").toBool())
+        emit logMessage(result.gitInitialized ? "Git repository initialized."
+                                              : "Git init skipped or unavailable.");
+    return true;
+}
+
+QString ProjectController::suggestedComponentDirectory(const QString &id) const
+{
+    return ProjectScaffolder::suggestedDirectory(m_activeProjectPath,
+                                                 ComponentRegistry::instance().component(id));
 }
 
 void ProjectController::checkNpm()
@@ -200,15 +236,15 @@ bool ProjectController::openProject(const QUrl &folder)
     }
 
     const QDir directory(folder.toLocalFile());
-    const QFileInfo manifest(directory.filePath("package.json"));
-
-    if (!manifest.isFile()) {
-        emit logMessage("Error: Choose the project folder containing package.json.");
+    const QVariantMap profile = ProjectScaffolder::detect(directory.absolutePath());
+    if (profile.isEmpty()) {
+        emit logMessage("Error: Choose a supported project (Jeridi profile, package.json, pom.xml, or index.html).");
         return false;
     }
 
     m_activeProjectName = directory.dirName();
     m_activeProjectPath = directory.absolutePath();
+    m_profile = profile;
     emit activeProjectChanged();
 
     emit logMessage("Project opened: " + m_activeProjectPath);
@@ -223,19 +259,18 @@ void ProjectController::installDependencies()
     }
 
     if (m_activeProjectPath.isEmpty()) {
-        emit logMessage("Error: Open or generate an npm project first.");
+        emit logMessage("Error: Open a project first.");
         return;
     }
 
     const QDir directory(m_activeProjectPath);
-    const QFileInfo manifest(directory.filePath("package.json"));
-
-    if (!manifest.isFile()) {
-        emit logMessage("Error: No package.json found. Generate React first.");
-        return;
+    if (QFileInfo::exists(directory.filePath("package.json"))) {
+        m_processRunner.run("npm", {"install"}, m_activeProjectPath);
+    } else if (QFileInfo::exists(directory.filePath("pom.xml"))) {
+        m_processRunner.run("mvn", {"dependency:go-offline"}, m_activeProjectPath);
+    } else {
+        emit logMessage("This project has no npm or Maven dependencies to install.");
     }
-
-    m_processRunner.run("npm", {"install"}, m_activeProjectPath);
 }
 
 
@@ -257,6 +292,31 @@ void ProjectController::startDevServer()
     }
 
     const QDir projectDirectory(m_activeProjectPath);
+    const QString framework = m_profile.value("framework").toString();
+    if (framework == "spring-boot") {
+        if (!QFileInfo::exists(projectDirectory.filePath("pom.xml"))) {
+            emit logMessage("Error: Spring Boot pom.xml is missing.");
+            return;
+        }
+        m_devServerRequested = true;
+        m_processRunner.run("mvn", {"spring-boot:run"}, m_activeProjectPath);
+        if (!busy()) m_devServerRequested = false;
+        return;
+    }
+    if (framework == "express-ts") {
+        if (!QFileInfo::exists(projectDirectory.filePath("node_modules"))) {
+            emit logMessage("Error: Install npm dependencies before running Express.");
+            return;
+        }
+        m_devServerRequested = true;
+        m_processRunner.run("npm", {"run", "dev"}, m_activeProjectPath);
+        if (!busy()) m_devServerRequested = false;
+        return;
+    }
+    if (framework != "react-vite" && framework != "vue-vite") {
+        emit logMessage("The Run action currently supports Vite, Express and Spring Boot projects.");
+        return;
+    }
     const QString viteScript =
         projectDirectory.absoluteFilePath("node_modules/vite/bin/vite.js");
 
@@ -347,7 +407,8 @@ QVariantMap ProjectController::inspectFile(const QUrl &fileUrl) const
     if (isEditableTextFile(suffix)) {
         const QStringList textExtensions{
             "tsx", "ts", "jsx", "js", "json", "css", "html",
-            "md", "txt", "qml", "cpp", "h"
+            "md", "txt", "qml", "cpp", "h", "java", "vue",
+            "xml", "properties", "yml", "yaml", "gradle", "kt"
         };
 
         if (textExtensions.contains(suffix)) {
@@ -455,7 +516,8 @@ QVariantList ProjectController::quickOpenFiles() const
 
         for (const QFileInfo &entry : entries) {
             if (entry.isDir()) {
-                if (entry.fileName() != "node_modules") {
+                if (entry.fileName() != "node_modules" && entry.fileName() != "target"
+                    && entry.fileName() != "dist" && entry.fileName() != "build") {
                     pendingFolders.append(entry.absoluteFilePath());
                 }
                 continue;

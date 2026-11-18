@@ -58,7 +58,7 @@ Dialog {
         actionError = ""
         repairConfirmation = false
         destinationPath = operation === "install"
-                ? String(ComponentRegistry.component(id).legacyDirectory || "src/components") : ""
+                ? String(root.controller.suggestedComponentDirectory(id)) : ""
         previewDelay.stop()
         refreshPreview()
         open()

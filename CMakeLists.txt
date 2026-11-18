@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(JeridiEngine VERSION 0.1 LANGUAGES CXX)
+project(JeridiEngine VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,6 +23,18 @@ qt_add_resources(appJeridiEngine component_packages
     PREFIX "/component-packages"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/component-packages"
     FILES ${component_package_assets}
+)
+
+# Framework generators are offline, versioned assets; a new generator is a
+# directory under project-templates/ and never touches projectcontroller.cpp.
+file(GLOB_RECURSE project_template_files CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/project-templates/*"
+    "${CMAKE_CURRENT_SOURCE_DIR}/project-templates/.*"
+)
+qt_add_resources(appJeridiEngine project_templates
+    PREFIX "/project-templates"
+    BASE "${CMAKE_CURRENT_SOURCE_DIR}/project-templates"
+    FILES ${project_template_files}
 )
 
 # Custom inspectors belong to their package, but compile into the QML module.
@@ -114,6 +126,11 @@ set(engine_qml_files
     qml/panels/projectfiles/ProjectExplorerFileRow.qml
     qml/panels/projectfiles/ProjectExplorerDetails.qml
     qml/dialogs/CreateProjectDialog.qml
+    qml/dialogs/newproject/ProjectProfiles.js
+    qml/dialogs/newproject/ProjectTypeSidebar.qml
+    qml/dialogs/newproject/ProjectDetailsStep.qml
+    qml/dialogs/newproject/ProjectOptionsStep.qml
+    qml/dialogs/newproject/ProjectReviewStep.qml
     qml/theme/DarkTheme.qml
     qml/theme/LightTheme.qml
     qml/theme/Theme.qml
@@ -172,6 +189,8 @@ qt_add_qml_module(appJeridiEngine
         src/application/startupservice.cpp
         src/application/projectcontroller.h
         src/application/projectcontroller.cpp
+        src/application/projectscaffolder.h
+        src/application/projectscaffolder.cpp
         src/components/componentregistry.h
         src/components/componentregistry.cpp
         src/components/componentmanager.h
@@ -225,12 +244,14 @@ if(JERIDI_BUILD_COMPONENT_TESTS)
     enable_testing()
     add_executable(component_lifecycle_tests
         tests/component_lifecycle_tests.cpp
+        src/application/projectscaffolder.cpp
         src/components/componentinstaller.cpp
         src/components/componentinstallationstore.cpp
         src/components/componentlifecycle.cpp
     )
     target_include_directories(component_lifecycle_tests PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/components")
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/components"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/application")
     target_link_libraries(component_lifecycle_tests PRIVATE Qt6::Core Qt6::Test)
     add_test(NAME component_lifecycle_tests COMMAND component_lifecycle_tests)
 endif()

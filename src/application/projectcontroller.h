@@ -21,6 +21,11 @@ class ProjectController : public QObject
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(bool devServerActive READ devServerActive NOTIFY busyChanged)
     Q_PROPERTY(QUrl previewUrl READ previewUrl NOTIFY previewUrlChanged)
+    Q_PROPERTY(QVariantMap projectProfile READ projectProfile NOTIFY activeProjectChanged)
+    Q_PROPERTY(QString projectKind READ projectKind NOTIFY activeProjectChanged)
+    Q_PROPERTY(QString projectFramework READ projectFramework NOTIFY activeProjectChanged)
+    Q_PROPERTY(QString projectArchitecture READ projectArchitecture NOTIFY activeProjectChanged)
+    Q_PROPERTY(QString lastProjectError READ lastProjectError NOTIFY lastProjectErrorChanged)
 
 
 
@@ -34,12 +39,19 @@ public:
     bool busy() const;
     bool devServerActive() const;
     QUrl previewUrl() const;
+    QVariantMap projectProfile() const { return m_profile; }
+    QString projectKind() const { return m_profile.value("kind").toString(); }
+    QString projectFramework() const { return m_profile.value("framework").toString(); }
+    QString projectArchitecture() const { return m_profile.value("architecture").toString(); }
+    QString lastProjectError() const { return m_lastProjectError; }
 
     Q_INVOKABLE void startDevServer();
     Q_INVOKABLE void stopDevServer();
 
     Q_INVOKABLE bool createProject(const QString &projectName,
                                   const QUrl &parentFolder);
+    Q_INVOKABLE bool createConfiguredProject(const QVariantMap &options);
+    Q_INVOKABLE QString suggestedComponentDirectory(const QString &id) const;
 
     Q_INVOKABLE bool openProject(const QUrl &folder);
     Q_INVOKABLE void installDependencies();
@@ -61,6 +73,7 @@ signals:
     void outputReceived(const QString &text);
     void projectCreated(const QString &projectName, const QString &projectPath);
     void previewUrlChanged();
+    void lastProjectErrorChanged();
 
 private:
     QString m_activeProjectName;
@@ -69,6 +82,8 @@ private:
     bool m_devServerRequested = false;
     QUrl m_previewUrl;
     QString m_devServerOutputTail;
+    QVariantMap m_profile;
+    QString m_lastProjectError;
 };
 
 #endif

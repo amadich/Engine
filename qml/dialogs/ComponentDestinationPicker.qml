@@ -238,7 +238,7 @@ Rectangle {
             id: pathField
             Layout.fillWidth: true
             Layout.preferredHeight: 34
-            placeholderText: "src/components/new-folder"
+            placeholderText: "Choose a project-relative folder"
             selectByMouse: true
             font.family: "Menlo"
             font.pixelSize: 11

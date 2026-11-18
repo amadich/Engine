@@ -15,6 +15,11 @@ SplitView {
 
     property string selectedComponentId: ""
 
+    Connections {
+        target: root.controller
+        function onActiveProjectChanged() { root.selectedComponentId = "" }
+    }
+
     property bool canAddComponent: false
 
     orientation: Qt.Horizontal

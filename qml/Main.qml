@@ -94,6 +94,9 @@ ApplicationWindow {
             window.selectedFileDetails = ({})
             workspace.editorWorkspace.reset()
         }
+        onProjectCreated: function(name, path) {
+            startupService.rememberProject(Qt.resolvedUrl("file://" + encodeURI(path)))
+        }
     }
 
     ComponentManager {
@@ -182,7 +185,7 @@ ApplicationWindow {
 
     FolderDialog {
         id: openProjectDialog
-        title: "Open npm project folder"
+        title: "Open project folder"
 
         onAccepted: {
             if (projectController.openProject(selectedFolder)) {

@@ -1,10 +1,12 @@
 #include "componentinstaller.h"
+#include "projectscaffolder.h"
 
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QSet>
+#include <QRegularExpression>
 #include <QVector>
 
 namespace {
@@ -47,18 +49,48 @@ QString validateFileDestination(const QDir &project, const QString &relativeFile
         return QStringLiteral("File already exists (nothing overwritten): ") + relativeFile;
     return {};
 }
+
+QString javaPackageForFile(const QString &relativeFile)
+{
+    const QString prefix = "src/main/java/";
+    const QString folder = QFileInfo(relativeFile).path();
+    if (!folder.startsWith(prefix))
+        return {};
+    const QStringList segments = folder.mid(prefix.size()).split('/');
+    const QRegularExpression segmentPattern("^[a-z][a-zA-Z0-9_]*$");
+    for (const QString &part : segments) {
+        if (!segmentPattern.match(part).hasMatch())
+            return {};
+    }
+    return segments.join('.');
+}
+
+QString dependenciesError(const QString &projectPath, const QVariantMap &definition)
+{
+    const QStringList required = definition.value("requiresDependencies").toStringList();
+    const QStringList enabled = ProjectScaffolder::detect(projectPath)
+                                    .value("dependencies").toStringList();
+    for (const QString &item : required) {
+        if (!enabled.contains(item))
+            return "This component requires the '" + item
+                   + "' dependency selected when creating the project.";
+    }
+    return {};
+}
 }
 
 bool ComponentInstaller::validTarget(const QString &path)
 {
     return safeRelativePath(path) && path != ".jeridiengine"
-           && !path.startsWith(".jeridiengine/");
+           && !path.startsWith(".jeridiengine/")
+           && path != ".jeridi" && !path.startsWith(".jeridi/");
 }
 
 bool ComponentInstaller::validDirectory(const QString &path)
 {
     return path == "." || (safeRelativePath(path)
-            && path != ".jeridiengine" && !path.startsWith(".jeridiengine/"));
+            && path != ".jeridiengine" && !path.startsWith(".jeridiengine/")
+            && path != ".jeridi" && !path.startsWith(".jeridi/"));
 }
 
 QString ComponentInstaller::combinedPath(const QString &directory, const QString &target)
@@ -97,8 +129,13 @@ QVariantMap ComponentInstaller::previewInstall(const QString &projectPath, const
     QVariantMap result{{"error", QString()}, {"files", QStringList{}},
                        {"references", QStringList{}}, {"collisions", QStringList{}}};
     const QDir project(projectPath);
-    if (!QFileInfo(project.filePath("package.json")).isFile()) {
-        result["error"] = QStringLiteral("Open an npm project (package.json) first.");
+    if (!ProjectScaffolder::compatible(projectPath, definition)) {
+        result["error"] = QStringLiteral("Package is not compatible with this project framework.");
+        return result;
+    }
+    const QString requirement = dependenciesError(projectPath, definition);
+    if (!requirement.isEmpty()) {
+        result["error"] = requirement;
         return result;
     }
     if (!validDirectory(relativeDirectory)) {
@@ -124,6 +161,10 @@ QVariantMap ComponentInstaller::previewInstall(const QString &projectPath, const
             return result;
         }
         const QString destination = combinedPath(relativeDirectory, target);
+        if (target.endsWith(".java") && javaPackageForFile(destination).isEmpty()) {
+            result["error"] = "Java classes must be placed under src/main/java/<package>.";
+            return result;
+        }
         planned.append(destination);
         const QString problem = validateFileDestination(project, destination);
         if (!problem.isEmpty())
@@ -149,8 +190,11 @@ QString ComponentInstaller::install(const QString &projectPath, const QString &i
     createdFiles->clear();
 
     const QDir project(projectPath);
-    if (!QFileInfo(project.filePath("package.json")).isFile())
-        return QStringLiteral("Open a project containing package.json first.");
+    if (!ProjectScaffolder::compatible(projectPath, definition))
+        return QStringLiteral("Package does not support this project framework.");
+    const QString requirement = dependenciesError(projectPath, definition);
+    if (!requirement.isEmpty())
+        return requirement;
     if (!validDirectory(relativeDirectory))
         return QStringLiteral("Choose a directory inside the project (no '..' or absolute paths).");
 
@@ -171,6 +215,10 @@ QString ComponentInstaller::install(const QString &projectPath, const QString &i
         seenTargets.insert(target);
 
         const QString relativeFile = combinedPath(relativeDirectory, target);
+        const QString javaPackage = target.endsWith(".java")
+            ? javaPackageForFile(relativeFile) : QString();
+        if (target.endsWith(".java") && javaPackage.isEmpty())
+            return QStringLiteral("Java files must be under src/main/java/<package>.");
         const QString error = validateFileDestination(project, relativeFile);
         if (!error.isEmpty())
             return error;
@@ -184,6 +232,11 @@ QString ComponentInstaller::install(const QString &projectPath, const QString &i
 
         if (!draftConfiguration.isEmpty() && target == configTarget)
             bytes = draftConfiguration.toUtf8();
+        if (!javaPackage.isEmpty()) {
+            QString content = QString::fromUtf8(bytes);
+            content.replace("__PACKAGE__", javaPackage);
+            bytes = content.toUtf8();
+        }
         plan.append({relativeFile, bytes});
     }
 

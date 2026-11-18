@@ -1,0 +1,6 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #10131e; color: #eff1ff; font: 16px system-ui; }
+main { max-width: 900px; padding: 16vh 8vw; }
+.badge { color: #aa96ff; letter-spacing: .25em; font-size: 12px; }
+h1 { font-size: clamp(38px, 8vw, 84px); margin: 20px 0; }
+p { color: #a3adc6; }

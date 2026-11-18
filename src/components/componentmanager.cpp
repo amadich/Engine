@@ -4,6 +4,7 @@
 #include "componentinstallationstore.h"
 #include "componentlifecycle.h"
 #include "componentregistry.h"
+#include "projectscaffolder.h"
 
 #include <QDir>
 #include <QFile>
@@ -35,7 +36,9 @@ void ComponentManager::setProjectController(ProjectController *controller)
 
 void ComponentManager::requestInstall(const QString &id)
 {
-    if (!ComponentRegistry::instance().component(id).isEmpty())
+    if (m_projectController && ProjectScaffolder::compatible(
+            m_projectController->activeProjectPath(),
+            ComponentRegistry::instance().component(id)))
         emit installRequested(id);
 }
 
@@ -59,6 +62,8 @@ QVariantMap ComponentManager::previewInstall(const QString &id,
         return {{"error", QStringLiteral("Unknown component package.")}};
     if (!m_projectController || m_projectController->activeProjectPath().isEmpty())
         return {{"error", QStringLiteral("Open a project first.")}};
+    if (!ProjectScaffolder::compatible(m_projectController->activeProjectPath(), definition))
+        return {{"error", QStringLiteral("This package does not support the active project's framework.")}};
     const QString projectPath = QDir(m_projectController->activeProjectPath()).canonicalPath();
     if (projectPath.isEmpty())
         return {{"error", QStringLiteral("Project folder is unavailable.")}};
@@ -130,6 +135,11 @@ QVariantMap ComponentManager::previewMove(const QString &id,
 {
     if (!m_projectController || !isInstalled(id))
         return {{"error", QStringLiteral("This component is not installed.")}};
+    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    for (const QVariant &file : definition.value("files").toList()) {
+        if (file.toMap().value("target").toString().endsWith(".java"))
+            return {{"error", QStringLiteral("Java package relocation is disabled until imports and package declarations can be rewritten safely.")}};
+    }
     const QString project = QDir(m_projectController->activeProjectPath()).canonicalPath();
     if (project.isEmpty())
         return {{"error", QStringLiteral("Project folder is unavailable.")}};
@@ -142,6 +152,11 @@ QString ComponentManager::moveComponentInDirectory(const QString &id,
 {
     if (!m_projectController || !isInstalled(id))
         return QStringLiteral("This component is not installed.");
+    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    for (const QVariant &file : definition.value("files").toList()) {
+        if (file.toMap().value("target").toString().endsWith(".java"))
+            return QStringLiteral("Java package relocation is not supported safely yet.");
+    }
     if (m_projectController->busy() && !m_projectController->devServerActive())
         return QStringLiteral("Wait for the current command to finish.");
     const QString project = QDir(m_projectController->activeProjectPath()).canonicalPath();
@@ -314,6 +329,8 @@ QString ComponentManager::installComponentInDirectory(const QString &id,
         return QStringLiteral("Unknown component: ") + id;
     if (!m_projectController || m_projectController->activeProjectPath().isEmpty())
         return QStringLiteral("Open a project first.");
+    if (!ProjectScaffolder::compatible(m_projectController->activeProjectPath(), definition))
+        return QStringLiteral("This package is not compatible with the active project.");
     if (m_projectController->busy() && !m_projectController->devServerActive())
         return QStringLiteral("Wait for the current command to finish.");
     if (!ComponentInstaller::validDirectory(relativeDirectory))

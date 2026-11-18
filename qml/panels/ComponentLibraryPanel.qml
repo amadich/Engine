@@ -21,6 +21,15 @@ Rectangle {
     readonly property bool projectOpen: !!(componentManager
                                       && componentManager.projectController
                                       && componentManager.projectController.activeProjectPath !== "")
+    readonly property string projectFramework: projectOpen
+        ? componentManager.projectController.projectFramework : ""
+    readonly property var availablePackages: {
+        const all = ComponentRegistry.components || []
+        if (!projectFramework) return []
+        return all.filter(function(definition) {
+            return (definition.frameworks || []).indexOf(projectFramework) !== -1
+        })
+    }
     readonly property bool hasInstallDialog: !!(componentManager
                                              && typeof componentManager.requestInstall === "function")
     readonly property string activeId: selectedComponentId.length > 0
@@ -80,7 +89,7 @@ Rectangle {
 
     function refreshInstallations() {
         const result = ({})
-        const all = ComponentRegistry.components || []
+        const all = root.availablePackages
         if (projectOpen && componentManager) {
             for (let i = 0; i < all.length; ++i) {
                 const id = String(all[i].id || "")
@@ -93,14 +102,14 @@ Rectangle {
     }
 
     function updateCounts() {
-        const stats = LibraryModel.counts(ComponentRegistry.components || [], installed, favorites)
+        const stats = LibraryModel.counts(root.availablePackages, installed, favorites)
         catalogCount = stats.catalog
         installedCount = stats.installed
         favoriteCount = stats.favorites
     }
 
     function rebuildRows() {
-        const view = LibraryModel.buildRows(ComponentRegistry.components || [],
+        const view = LibraryModel.buildRows(root.availablePackages,
                           installed, favorites, filterMode, sortMode, searchText,
                           expandedGroups)
         visibleRows = view.rows
@@ -119,7 +128,7 @@ Rectangle {
     }
 
     function setAllExpanded(expand) {
-        expandedGroups = LibraryModel.expandAll(ComponentRegistry.components || [], expand)
+        expandedGroups = LibraryModel.expandAll(root.availablePackages, expand)
         rebuildRows()
     }
 
@@ -140,6 +149,10 @@ Rectangle {
     onSearchTextChanged: rebuildRows()
     onComponentManagerChanged: refreshInstallations()
     onProjectOpenChanged: refreshInstallations()
+    onProjectFrameworkChanged: {
+        localSelectedId = ""
+        refreshInstallations()
+    }
     Component.onCompleted: { readFavorites(); refreshInstallations() }
 
     Connections {
@@ -150,7 +163,10 @@ Rectangle {
     }
     Connections {
         target: root.componentManager ? root.componentManager.projectController : null
-        function onActiveProjectChanged() { root.refreshInstallations() }
+        function onActiveProjectChanged() {
+            root.localSelectedId = ""
+            root.refreshInstallations()
+        }
     }
 
     ColumnLayout {
@@ -232,7 +248,10 @@ Rectangle {
                 }
                 Label {
                     Layout.fillWidth: true
-                    text: root.filterMode === "favorites" && root.favoriteCount === 0
+                    text: !root.projectOpen ? "Open or create a project to see compatible packages"
+                          : root.projectFramework === "unknown" ? "Project framework is not recognized yet"
+                          : root.catalogCount === 0 ? "No packages for this framework yet"
+                          : root.filterMode === "favorites" && root.favoriteCount === 0
                           ? "No starred packages yet"
                           : root.filterMode === "installed" && root.installedCount === 0
                             ? "No installed packages" : "No matching components"

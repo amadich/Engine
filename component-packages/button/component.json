@@ -1,5 +1,6 @@
 {
   "id": "button",
+  "frameworks": ["react-vite"],
   "name": "Button",
   "category": ["UI Components", "Inputs"],
   "activation": "inspect",

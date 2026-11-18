@@ -88,6 +88,15 @@ Rectangle {
         if (name.endsWith(".js"))
             return "JavaScript"
 
+        if (name.endsWith(".java"))
+            return "Java"
+
+        if (name.endsWith(".vue"))
+            return "Vue"
+
+        if (name.endsWith(".xml"))
+            return "XML"
+
         if (name.endsWith(".json"))
             return "JSON"
 
