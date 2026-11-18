@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import JeridiEngine
 import QtQuick.Dialogs
 
@@ -44,6 +45,94 @@ ApplicationWindow {
         return false
     }
 
+    function copyToClipboard(value) {
+        if (!value) return
+        menuClipboard.text = value
+        menuClipboard.selectAll()
+        menuClipboard.copy()
+        menuClipboard.deselect()
+        menuClipboard.text = ""
+    }
+
+    function handleMenuCommand(command, payload) {
+        const editor = workspace.editorWorkspace
+        switch (command) {
+        case "newProject":
+            if (canLeaveProject()) createProjectDialog.open()
+            break
+        case "openProject":
+            if (canLeaveProject()) openProjectDialog.open()
+            break
+        case "openRecent":
+            if (canLeaveProject()) {
+                if (projectController.openProjectPath(payload)) {
+                    startupService.rememberProject(projectController.projectFolderUrl)
+                    window.launcherVisible = false
+                }
+            }
+            break
+        case "quickOpen":
+            if (projectController.activeProjectPath !== "" && !quickOpen.visible)
+                quickOpen.open()
+            break
+        case "save": editor.saveCurrent(); break
+        case "saveAll": editor.saveAll(); break
+        case "closeEditor": editor.closeCurrent(); break
+        case "closeAllEditors": editor.closeAllEditors(); break
+        case "closeProject":
+            if (canLeaveProject()) projectController.closeProject()
+            break
+        case "welcome":
+            if (!projectController.busy && canLeaveProject())
+                window.launcherVisible = true
+            break
+        case "quit": window.close(); break
+        case "undo": editor.undoEdit(); break
+        case "redo": editor.redoEdit(); break
+        case "cut": editor.cutSelection(); break
+        case "copy": editor.copySelection(); break
+        case "paste": editor.pasteClipboard(); break
+        case "selectAll": editor.selectAllText(); break
+        case "find": editor.openFind(); break
+        case "findNext": editor.findNext(false); break
+        case "goToLine": editor.openGoToLine(); break
+        case "copyFilePath":
+            copyToClipboard(projectController.localFilePath(editor.currentFileUrl))
+            break
+        case "copyProjectPath": copyToClipboard(projectController.activeProjectPath); break
+        case "toggleProjectFiles": engineToolbar.showProjectFiles = !engineToolbar.showProjectFiles; break
+        case "toggleOutput": engineToolbar.showOutput = !engineToolbar.showOutput; break
+        case "showAllPanels": engineToolbar.showProjectFiles = true; engineToolbar.showOutput = true; break
+        case "showOutput": engineToolbar.showOutput = true; break
+        case "preview": editor.showPreview(); break
+        case "nextTab": editor.nextTab(); break
+        case "previousTab": editor.previousTab(); break
+        case "zoomIn": editor.changeFontSize(1); break
+        case "zoomOut": editor.changeFontSize(-1); break
+        case "zoomReset": editor.editorFontSize = 14; break
+        case "darkTheme": Theme.appearance = "dark"; break
+        case "lightTheme": Theme.appearance = "light"; break
+        case "run": projectController.startDevServer(); break
+        case "stop": projectController.stopDevServer(); break
+        case "installDependencies": projectController.installDependencies(); engineToolbar.showOutput = true; break
+        case "checkNpm": projectController.checkNpm(); engineToolbar.showOutput = true; break
+        case "generateReact": projectController.generateReact(); engineToolbar.showOutput = true; break
+        case "clearOutput": outputPanel.clearOutput(); break
+        case "copyOutput": outputPanel.copyLog(false); break
+        case "revealProject": projectController.revealProjectFolder(); break
+        case "projectInfo": projectInfoDialog.open(); break
+        case "checkUpdates": updatesDialog.open(); startupService.checkUpdates(); break
+        case "preferences": preferencesDialog.open(); break
+        case "shortcuts": shortcutsDialog.open(); break
+        case "about": aboutDialog.open(); break
+        case "minimize": window.showMinimized(); break
+        case "maximize": engineToolbar.toggleMaximized(); break
+        default: console.warn("Unknown menu command:", command)
+        }
+    }
+
+    TextEdit { id: menuClipboard; visible: false; width: 1; height: 1 }
+
     function closeEditorsAfterComponentChange() {
         // Saved tabs may still refer to the old paths after relocation/removal.
         window.selectedFileUrl = ""
@@ -53,12 +142,6 @@ ApplicationWindow {
 
     onClosing: function(close) {
         close.accepted = window.canLeaveProject()
-    }
-
-    Shortcut {
-        sequence: "Ctrl+P"
-        enabled: projectController.activeProjectPath !== "" && !quickOpen.visible
-        onActivated: quickOpen.open()
     }
 
     QuickOpenDialog {
@@ -83,6 +166,39 @@ ApplicationWindow {
     PreferencesDialog {
         id: preferencesDialog
         parent: Overlay.overlay
+    }
+
+    MenuShortcutsDialog {
+        id: shortcutsDialog
+        parent: Overlay.overlay
+    }
+    MenuProjectInfoDialog {
+        id: projectInfoDialog
+        parent: Overlay.overlay
+        controller: projectController
+    }
+    MenuUpdatesDialog {
+        id: updatesDialog
+        parent: Overlay.overlay
+        startup: startupService
+    }
+    Dialog {
+        id: aboutDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 420
+        title: "About Jeridi Engine"
+        modal: true
+        popupType: Popup.Window
+        standardButtons: Dialog.Close
+        padding: 18
+        background: Rectangle { color: Theme.colors.panel; border.color: Theme.colors.border; radius: 7 }
+        contentItem: ColumnLayout {
+            spacing: 10
+            Label { text: "JERIDI ENGINE"; color: Theme.colors.text; font.pixelSize: 21; font.bold: true }
+            Label { text: "Version " + startupService.currentVersion(); color: Theme.colors.accent; font.pixelSize: 13 }
+            Label { Layout.fillWidth: true; text: "Development workspace, project generator and context-aware component library."; color: Theme.colors.muted; font.pixelSize: 12; wrapMode: Text.WordWrap }
+        }
     }
 
 
@@ -149,32 +265,22 @@ ApplicationWindow {
     }
 
     header: EngineToolbar {
-        visible: !window.launcherVisible
         id: engineToolbar
+        visible: !window.launcherVisible
         hostWindow: window
         projectName: projectController.activeProjectName
         projectPath: projectController.activeProjectPath
+        projectFramework: projectController.projectFramework
+        recentProjects: startupService.recentProjects
         busy: projectController.busy
-
-        onCreateProjectRequested: {
-            if (window.canLeaveProject())
-                createProjectDialog.open()
-        }
-        onCheckNpmRequested: projectController.checkNpm()
-        onGenerateReactRequested: projectController.generateReact()
-
-        onOpenProjectRequested: {
-            if (window.canLeaveProject())
-                openProjectDialog.open()
-        }
-        onInstallDependenciesRequested: projectController.installDependencies()
-
+        hasEditor: workspace.editorWorkspace.activeTab >= 0
+        hasDirty: workspace.editorWorkspace.hasUnsavedChanges
         devServerActive: projectController.devServerActive
-
+        onMenuCommandRequested: function(command, payload) {
+            window.handleMenuCommand(command, payload)
+        }
         onRunRequested: projectController.startDevServer()
         onStopRequested: projectController.stopDevServer()
-
-        onPreferencesRequested: preferencesDialog.open()
     }
 
     CreateProjectDialog {

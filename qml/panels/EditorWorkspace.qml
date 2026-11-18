@@ -15,6 +15,11 @@ Rectangle {
     property int dirtyCount: 0
     property bool loadingBuffer: false
     property string statusMessage: ""
+    property int editorFontSize: 14
+    property bool findVisible: false
+    readonly property string currentFileUrl:
+        activeTab >= 0 && activeTab < documentModel.count
+        ? documentModel.get(activeTab).fileUrl : ""
 
     readonly property bool hasUnsavedChanges: dirtyCount > 0
 
@@ -242,14 +247,71 @@ Rectangle {
         statusMessage = ""
     }
 
+    // Public editor commands used by the menu dispatcher.
+    function saveAll() {
+        let failed = 0
+        for (let i = 0; i < documentModel.count; ++i) {
+            const doc = documentModel.get(i)
+            if (!doc.dirty) continue
+            const error = controller.saveTextFile(doc.fileUrl, doc.original, doc.draft)
+            if (error) { failed += 1; statusMessage = error; continue }
+            documentModel.setProperty(i, "original", doc.draft)
+            documentModel.setProperty(i, "dirty", false)
+            dirtyCount -= 1
+        }
+        if (!failed) statusMessage = ""
+    }
+
+    function closeCurrent() { closeTab(activeTab) }
+    function closeAllEditors() {
+        if (hasUnsavedChanges) {
+            statusMessage = "Save modified files before closing all editors."
+            return
+        }
+        reset()
+    }
+    function nextTab() {
+        if (documentModel.count === 0) return
+        selectTab((activeTab + 1) % documentModel.count)
+    }
+    function previousTab() {
+        if (documentModel.count === 0) return
+        selectTab(activeTab < 0 ? documentModel.count - 1
+                  : (activeTab + documentModel.count - 1) % documentModel.count)
+    }
+    function showPreview() { selectTab(-1) }
+    function undoEdit() { if (activeTab >= 0) editor.undoEdit() }
+    function redoEdit() { if (activeTab >= 0) editor.redoEdit() }
+    function cutSelection() { if (activeTab >= 0) editor.cutSelection() }
+    function copySelection() { if (activeTab >= 0) editor.copySelection() }
+    function pasteClipboard() { if (activeTab >= 0) editor.pasteClipboard() }
+    function selectAllText() { if (activeTab >= 0) editor.selectAllText() }
+    function openFind() {
+        if (activeTab < 0) return
+        findVisible = true
+        Qt.callLater(function() { findField.forceActiveFocus(); findField.selectAll() })
+    }
+    function findNext(backwards) {
+        if (activeTab < 0) return
+        if (!findVisible) { openFind(); return }
+        if (!editor.findText(findField.text, backwards === true))
+            statusMessage = "No match for: " + findField.text
+        else statusMessage = ""
+    }
+    function openGoToLine() {
+        if (activeTab < 0) return
+        goToLineInput.text = "1"
+        goToLineDialog.open()
+        Qt.callLater(function() { goToLineInput.forceActiveFocus(); goToLineInput.selectAll() })
+    }
+    function changeFontSize(delta) {
+        editorFontSize = Math.max(10, Math.min(26, editorFontSize + delta))
+    }
+
     // KEYBOARD SHORTCUTS
 
 
-    Shortcut {
-        sequences: [StandardKey.Save]
-        enabled: root.activeTab >= 0
-        onActivated: root.saveCurrent()
-    }
+    // Global Save shortcut is owned by EngineMenuBar (no duplicate binding).
 
     ColumnLayout {
         anchors.fill: parent
@@ -272,6 +334,40 @@ Rectangle {
             onTabRequested: function(index) { root.selectTab(index) }
             onCloseRequested: function(index) { root.closeTab(index) }
             onSaveRequested: root.saveCurrent()
+        }
+
+        // Compact in-editor find strip, opened from Edit > Find.
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 36
+            visible: root.findVisible && root.activeTab >= 0
+            color: Theme.colors.control
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 8
+                Label { text: "FIND"; color: Theme.colors.muted; font.pixelSize: 10; font.bold: true }
+                TextField {
+                    id: findField
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: 350
+                    implicitHeight: 27
+                    font.pixelSize: 12
+                    placeholderText: "Search current file…"
+                    onAccepted: root.findNext(false)
+                    Keys.onEscapePressed: function(event) {
+                        root.findVisible = false
+                        editor.focusEditor()
+                        event.accepted = true
+                    }
+                }
+                ToolButton { text: "↑"; implicitWidth: 27; onClicked: root.findNext(true); ToolTip.text: "Previous match"; ToolTip.visible: hovered }
+                ToolButton { text: "↓"; implicitWidth: 27; onClicked: root.findNext(false); ToolTip.text: "Next match"; ToolTip.visible: hovered }
+                ToolButton { text: "×"; implicitWidth: 27; onClicked: { root.findVisible = false; editor.focusEditor() } }
+                Item { Layout.fillWidth: true }
+            }
         }
 
         // FILE INFORMATION BAR
@@ -374,6 +470,7 @@ Rectangle {
             Layout.fillHeight: true
             visible: root.activeTab >= 0
             fileName: root.currentName
+            editorFontSize: root.editorFontSize
             selectionColor: root.accentColor
 
             onTextChanged: {
@@ -391,6 +488,33 @@ Rectangle {
                     root.dirtyCount += isDirty ? 1 : -1
                 }
             }
+        }
+    }
+
+    Dialog {
+        id: goToLineDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 320
+        modal: true
+        popupType: Popup.Window
+        title: "Go to Line"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        background: Rectangle { color: Theme.colors.panel; border.color: Theme.colors.border; radius: 6 }
+        contentItem: ColumnLayout {
+            spacing: 10
+            Label { text: "Line number"; color: Theme.colors.text; font.pixelSize: 12 }
+            TextField {
+                id: goToLineInput
+                Layout.fillWidth: true
+                validator: IntValidator { bottom: 1; top: 999999 }
+                onAccepted: goToLineDialog.accept()
+            }
+        }
+        onAccepted: {
+            if (!editor.goToLine(Number(goToLineInput.text)))
+                root.statusMessage = "Line number is outside this file."
+            else root.statusMessage = ""
         }
     }
 }

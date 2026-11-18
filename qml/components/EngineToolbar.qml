@@ -1,529 +1,150 @@
-
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import JeridiEngine
 
+// The toolbar owns window chrome and the menu surface; commands are routed by Main.qml.
 ToolBar {
     id: root
-
-    // ==================================================
-    // Properties
-    // ==================================================
-
     required property ApplicationWindow hostWindow
 
     property string projectName: ""
     property string projectPath: ""
-
+    property string projectFramework: ""
+    property var recentProjects: []
+    property bool hasEditor: false
+    property bool hasDirty: false
     property bool busy: false
     property bool devServerActive: false
-
     property bool showProjectFiles: true
     property bool showOutput: true
 
-    readonly property bool maximized:
-        hostWindow.visibility === Window.Maximized
+    readonly property bool maximized: hostWindow.visibility === Window.Maximized
 
-    // ==================================================
-    // Signals
-    // ==================================================
-
-    signal createProjectRequested()
-    signal openProjectRequested()
-    signal checkNpmRequested()
-    signal generateReactRequested()
-    signal installDependenciesRequested()
+    signal menuCommandRequested(string command, var payload)
     signal runRequested()
     signal stopRequested()
-    signal preferencesRequested()
 
-    // ==================================================
-    // Toolbar configuration
-    // ==================================================
-
-    implicitHeight: 54
+    implicitHeight: 48
     padding: 0
-
-    background: Rectangle {
-        color: Theme.colors.control
-    }
+    background: Rectangle { color: Theme.colors.control }
 
     function toggleMaximized() {
-        if (root.maximized)
-            hostWindow.showNormal()
-        else
-            hostWindow.showMaximized()
+        if (root.maximized) hostWindow.showNormal()
+        else hostWindow.showMaximized()
     }
 
-    // ==================================================
-    // Reusable components
-    // ==================================================
-
-    component HeaderButton: Button {
+    component ChromeButton: Button {
         id: button
-
-        implicitHeight: 30
-        padding: 7
-
-        contentItem: Text {
+        implicitWidth: 30
+        implicitHeight: 28
+        padding: 0
+        hoverEnabled: true
+        contentItem: Label {
             text: button.text
-            font.pixelSize: 13
-
-            color: button.enabled
-                   ? Theme.colors.text
-                   : Theme.colors.disabled
-
+            font.pixelSize: 12
+            color: button.enabled ? Theme.colors.text : Theme.colors.disabled
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
-
         background: Rectangle {
-            radius: 7
-
-            color: button.down
-                   ? Theme.colors.selection
-                   : button.hovered
-                     ? Theme.colors.hover
-                     : Theme.colors.control
+            radius: 4
+            color: button.down ? Theme.colors.selection
+                 : button.hovered ? Theme.colors.hover : "transparent"
         }
     }
-
-    component ThemeMenu: Menu {
-        id: menu
-
-        property int menuWidth: 200
-
-        implicitWidth: menuWidth
-        padding: 5
-
-        popupType: Popup.Window
-
-        background: Rectangle {
-            implicitWidth: menu.menuWidth
-            radius: 8
-            color: Theme.colors.control
-            border.width: 0
-        }
-    }
-
-    component ThemeMenuItem: MenuItem {
-        id: item
-
-        implicitHeight: 34
-
-        leftPadding: 12
-        rightPadding: 12
-        topPadding: 4
-        bottomPadding: 4
-
-        // Disable Qt's default check indicator
-        indicator: Item {
-            implicitWidth: 0
-            implicitHeight: 0
-        }
-
-        contentItem: RowLayout {
-            spacing: 12
-
-            Text {
-                Layout.fillWidth: true
-
-                text: item.text
-                font.pixelSize: 13
-                elide: Text.ElideRight
-
-                color: item.enabled
-                       ? Theme.colors.text
-                       : Theme.colors.disabled
-
-                verticalAlignment: Text.AlignVCenter
-            }
-
-            Text {
-                Layout.preferredWidth: 18
-
-                visible: item.checkable
-                text: item.checked ? "✓" : ""
-
-                font.pixelSize: 14
-                color: Theme.colors.text
-
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-        }
-
-        background: Rectangle {
-            radius: 5
-
-            color: !item.enabled
-                   ? "transparent"
-                   : item.down
-                     ? Theme.colors.selection
-                     : item.highlighted || item.hovered
-                       ? Theme.colors.hover
-                       : "transparent"
-        }
-    }
-
-    // ==================================================
-    // Clipboard helper
-    // ==================================================
-
-    TextEdit {
-        id: clipboardText
-
-        visible: false
-        text: root.projectPath
-    }
-
-    // ==================================================
-    // About dialog
-    // ==================================================
-
-    Dialog {
-        id: aboutDialog
-
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-
-        width: 420
-        title: "About Jeridi Engine"
-
-        modal: true
-        padding: 16
-
-        popupType: Popup.Window
-        standardButtons: Dialog.Ok
-
-        palette.windowText: Theme.colors.text
-        palette.buttonText: Theme.colors.text
-
-        background: Rectangle {
-            color: Theme.colors.control
-            radius: 10
-            border.width: 0
-        }
-
-        contentItem: Label {
-            text: "Jeridi Engine\nProject creation, live preview and component library."
-
-            color: Theme.colors.text
-            wrapMode: Text.WordWrap
-        }
-    }
-
-    // ==================================================
-    // Toolbar layout
-    // ==================================================
 
     contentItem: RowLayout {
-        spacing: 6
-
-        Item {
-            Layout.preferredWidth: 10
-        }
-
-        // Logo
+        spacing: 4
+        Item { Layout.preferredWidth: 8 }
         Image {
-            Layout.preferredWidth: 38
-            Layout.preferredHeight: 32
-
+            Layout.preferredWidth: 30
+            Layout.preferredHeight: 30
             source: "qrc:/engine/assets/logos/engine_logo_orange.svg"
-
-            sourceSize.width: 76
-            sourceSize.height: 64
-
+            sourceSize: Qt.size(60, 60)
             fillMode: Image.PreserveAspectFit
         }
 
-        // ==============================================
-        // Menu bar
-        // ==============================================
-
-        MenuBar {
-            id: mainMenu
-
-            background: Item {}
-
-            delegate: MenuBarItem {
-                id: tab
-
-                padding: 7
-
-                contentItem: Text {
-                    text: tab.text
-                    font.pixelSize: 13
-                    color: Theme.colors.text
-
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-
-                background: Rectangle {
-                    radius: 6
-
-                    color: tab.highlighted || tab.hovered
-                           ? Theme.colors.hover
-                           : "transparent"
-                }
-            }
-
-            // ------------------------------------------
-            // File
-            // ------------------------------------------
-
-            ThemeMenu {
-                title: "File"
-
-                ThemeMenuItem {
-                    text: "New Project…"
-                    enabled: !root.busy
-
-                    onTriggered: root.createProjectRequested()
-                }
-
-                ThemeMenuItem {
-                    text: "Open Project…"
-                    enabled: !root.busy
-
-                    onTriggered: root.openProjectRequested()
-                }
-            }
-
-            // ------------------------------------------
-            // Edit
-            // ------------------------------------------
-
-            ThemeMenu {
-                title: "Edit"
-
-                ThemeMenuItem {
-                    text: "Copy Project Path"
-                    enabled: root.projectPath !== ""
-
-                    onTriggered: {
-                        clipboardText.selectAll()
-                        clipboardText.copy()
-                        clipboardText.deselect()
-                    }
-                }
-
-                MenuSeparator {}
-
-                ThemeMenuItem {
-                    text: "Preferences…"
-
-                    onTriggered: root.preferencesRequested()
-                }
-            }
-
-            // ------------------------------------------
-            // View
-            // ------------------------------------------
-
-            ThemeMenu {
-                title: "View"
-
-                ThemeMenuItem {
-                    text: "Project Files"
-                    checkable: true
-                    checked: root.showProjectFiles
-
-                    onTriggered: {
-                        root.showProjectFiles =
-                                !root.showProjectFiles
-                    }
-                }
-
-                ThemeMenuItem {
-                    text: "Output"
-                    checkable: true
-                    checked: root.showOutput
-
-                    onTriggered: {
-                        root.showOutput = !root.showOutput
-                    }
-                }
-            }
-
-            // ------------------------------------------
-            // Tools
-            // ------------------------------------------
-
-            ThemeMenu {
-                title: "Tools"
-                menuWidth: 220
-
-                ThemeMenuItem {
-                    text: "Check npm"
-                    enabled: !root.busy
-
-                    onTriggered: root.checkNpmRequested()
-                }
-
-                ThemeMenuItem {
-                    text: "Generate React"
-
-                    enabled: root.projectPath !== ""
-                             && !root.busy
-
-                    onTriggered: root.generateReactRequested()
-                }
-
-                ThemeMenuItem {
-                    text: "Install Dependencies"
-
-                    enabled: root.projectPath !== ""
-                             && !root.busy
-
-                    onTriggered: root.installDependenciesRequested()
-                }
-            }
-
-            // ------------------------------------------
-            // Window
-            // ------------------------------------------
-
-            ThemeMenu {
-                title: "Window"
-
-                ThemeMenuItem {
-                    text: "Minimize"
-
-                    onTriggered: root.hostWindow.showMinimized()
-                }
-
-                ThemeMenuItem {
-                    text: root.maximized
-                          ? "Restore"
-                          : "Maximize"
-
-                    onTriggered: root.toggleMaximized()
-                }
-
-                MenuSeparator {}
-
-                ThemeMenuItem {
-                    text: "Close"
-
-                    onTriggered: root.hostWindow.close()
-                }
-            }
-
-            // ------------------------------------------
-            // Help
-            // ------------------------------------------
-
-            ThemeMenu {
-                title: "Help"
-
-                ThemeMenuItem {
-                    text: "About Jeridi Engine"
-
-                    onTriggered: aboutDialog.open()
-                }
+        EngineMenuBar {
+            id: menuBar
+            Layout.preferredHeight: 34
+            busy: root.busy
+            menuActive: root.visible
+            devServerActive: root.devServerActive
+            hasProject: root.projectPath !== ""
+            hasEditor: root.hasEditor
+            hasDirty: root.hasDirty
+            showProjectFiles: root.showProjectFiles
+            showOutput: root.showOutput
+            projectFramework: root.projectFramework
+            recentProjects: root.recentProjects
+            onCommandRequested: function(command, payload) {
+                root.menuCommandRequested(command, payload)
             }
         }
-
-        // ==============================================
-        // Project title / Drag area
-        // ==============================================
 
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.minimumWidth: 36
-
-            Label {
+            Layout.minimumWidth: 20
+            RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
-
-                text: root.projectName || "No project open"
-
-                color: Theme.colors.disabled
-                elide: Text.ElideRight
-
-                verticalAlignment: Text.AlignVCenter
+                anchors.leftMargin: 8
+                spacing: 7
+                Label {
+                    Layout.fillWidth: true
+                    text: root.projectName || "No project open"
+                    color: Theme.colors.muted
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
+                }
+                Rectangle {
+                    visible: root.busy
+                    Layout.preferredWidth: 6
+                    Layout.preferredHeight: 6
+                    radius: 3
+                    color: Theme.colors.accent
+                }
             }
-
             MouseArea {
                 anchors.fill: parent
-
                 onPressed: root.hostWindow.startSystemMove()
             }
         }
 
-        // ==============================================
-        // Run / Stop
-        // ==============================================
-
-        HeaderButton {
-            Layout.preferredWidth: 64
-
-            text: root.devServerActive ? "Stop" : "Run"
-
-            enabled: root.devServerActive ||
-                     (root.projectPath !== "" && !root.busy)
-
+        ChromeButton {
+            implicitWidth: 64
+            text: root.devServerActive ? "■ Stop" : "▶ Run"
+            enabled: root.devServerActive || (root.projectPath !== "" && !root.busy)
             onClicked: {
-                if (root.devServerActive)
-                    root.stopRequested()
-                else
-                    root.runRequested()
+                if (root.devServerActive) root.stopRequested()
+                else root.runRequested()
             }
+            ToolTip.visible: hovered
+            ToolTip.text: root.devServerActive ? "Stop process (Shift+F5)" : "Run project (Ctrl+F5)"
         }
-
-        Item {
-            Layout.preferredWidth: 6
-        }
-
-        // ==============================================
-        // Window controls
-        // ==============================================
-
-        HeaderButton {
-            Layout.preferredWidth: 30
+        Item { Layout.preferredWidth: 6 }
+        ChromeButton {
             text: "−"
-
             Accessible.name: "Minimize"
-
             onClicked: root.hostWindow.showMinimized()
         }
-
-        HeaderButton {
-            Layout.preferredWidth: 30
-
+        ChromeButton {
             text: root.maximized ? "❐" : "□"
-
-            Accessible.name:
-                root.maximized ? "Restore" : "Maximize"
-
+            Accessible.name: root.maximized ? "Restore" : "Maximize"
             onClicked: root.toggleMaximized()
         }
-
-        HeaderButton {
+        ChromeButton {
             id: closeButton
-
-            Layout.preferredWidth: 30
             text: "×"
-
             Accessible.name: "Close window"
-
             onClicked: root.hostWindow.close()
-
             background: Rectangle {
-                radius: 7
-
-                color: closeButton.hovered
-                       ? Theme.colors.closeHover
-                       : Theme.colors.control
+                radius: 4
+                color: closeButton.hovered ? Theme.colors.closeHover : "transparent"
             }
         }
-
-        Item {
-            Layout.preferredWidth: 10
-        }
+        Item { Layout.preferredWidth: 8 }
     }
 }

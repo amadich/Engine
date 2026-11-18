@@ -54,6 +54,12 @@ public:
     Q_INVOKABLE QString suggestedComponentDirectory(const QString &id) const;
 
     Q_INVOKABLE bool openProject(const QUrl &folder);
+    Q_INVOKABLE bool openProjectPath(const QString &path) {
+        return openProject(QUrl::fromLocalFile(path));
+    }
+    Q_INVOKABLE bool closeProject();
+    Q_INVOKABLE bool revealProjectFolder() const;
+    Q_INVOKABLE QString localFilePath(const QUrl &url) const { return url.toLocalFile(); }
     Q_INVOKABLE void installDependencies();
 
     Q_INVOKABLE void checkNpm();

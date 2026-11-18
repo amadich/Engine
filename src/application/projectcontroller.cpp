@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QFile>
+#include <QDesktopServices>
 
 namespace {
 const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
@@ -249,6 +250,34 @@ bool ProjectController::openProject(const QUrl &folder)
 
     emit logMessage("Project opened: " + m_activeProjectPath);
     return true;
+}
+
+bool ProjectController::closeProject()
+{
+    if (busy()) {
+        emit logMessage("Stop the running process before closing the project.");
+        return false;
+    }
+    if (m_activeProjectPath.isEmpty()) return true;
+    const QString name = m_activeProjectName;
+    m_activeProjectName.clear();
+    m_activeProjectPath.clear();
+    m_profile.clear();
+    m_devServerRequested = false;
+    m_devServerOutputTail.clear();
+    if (!m_previewUrl.isEmpty()) {
+        m_previewUrl = QUrl();
+        emit previewUrlChanged();
+    }
+    emit activeProjectChanged();
+    emit logMessage("Project closed: " + name);
+    return true;
+}
+
+bool ProjectController::revealProjectFolder() const
+{
+    return !m_activeProjectPath.isEmpty()
+        && QDesktopServices::openUrl(QUrl::fromLocalFile(m_activeProjectPath));
 }
 
 void ProjectController::installDependencies()

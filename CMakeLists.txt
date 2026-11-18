@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(JeridiEngine VERSION 0.3 LANGUAGES CXX)
+project(JeridiEngine VERSION 0.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -63,6 +63,14 @@ set(engine_qml_files
     qml/launcher/LauncherWelcome.qml
     qml/launcher/LauncherUpdatesPopup.qml
     qml/components/EngineToolbar.qml
+    qml/menus/EngineMenu.qml
+    qml/menus/EngineMenuItem.qml
+    qml/menus/EngineMenuSection.qml
+    qml/menus/EngineMenuDivider.qml
+    qml/menus/EngineMenuBar.qml
+    qml/menus/MenuShortcutsDialog.qml
+    qml/menus/MenuProjectInfoDialog.qml
+    qml/menus/MenuUpdatesDialog.qml
     qml/components/WorkspaceView.qml
     qml/components/ComponentInstallationActions.qml
     qml/inspectors/InspectorHost.qml

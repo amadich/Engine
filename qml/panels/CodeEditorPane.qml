@@ -10,6 +10,46 @@ Item {
     property alias selectionColor: input.selectionColor
     readonly property alias textDocument: input.textDocument
     property string fileName: ""
+    property int editorFontSize: 14
+    readonly property alias canUndo: input.canUndo
+    readonly property alias canRedo: input.canRedo
+
+    function undoEdit() { input.undo(); input.forceActiveFocus() }
+    function redoEdit() { input.redo(); input.forceActiveFocus() }
+    function cutSelection() { input.cut(); input.forceActiveFocus() }
+    function copySelection() { input.copy(); input.forceActiveFocus() }
+    function pasteClipboard() { input.paste(); input.forceActiveFocus() }
+    function selectAllText() { input.selectAll(); input.forceActiveFocus() }
+
+    function findText(query, backwards) {
+        if (!query) return false
+        const haystack = input.text.toLowerCase()
+        const needle = query.toLowerCase()
+        let index
+        if (backwards) {
+            index = haystack.lastIndexOf(needle, Math.max(0, input.selectionStart - 1))
+            if (index < 0) index = haystack.lastIndexOf(needle)
+        } else {
+            index = haystack.indexOf(needle, input.selectionEnd)
+            if (index < 0) index = haystack.indexOf(needle)
+        }
+        if (index < 0) return false
+        input.select(index, index + query.length)
+        input.forceActiveFocus()
+        return true
+    }
+
+    function goToLine(number) {
+        if (number < 1) return false
+        const lines = input.text.split("\n")
+        if (number > lines.length) return false
+        let offset = 0
+        for (let i = 0; i < number - 1; ++i)
+            offset += lines[i].length + 1
+        input.cursorPosition = offset
+        input.forceActiveFocus()
+        return true
+    }
     property var suggestions: []
     property int selectedIndex: -1
     readonly property bool completing: selectedIndex >= 0
@@ -77,7 +117,7 @@ Item {
 
             padding: 16
             font.family: "Menlo"
-            font.pixelSize: 14
+            font.pixelSize: pane.editorFontSize
             color: Theme.colors.text
             textFormat: TextEdit.PlainText
             wrapMode: TextEdit.NoWrap
