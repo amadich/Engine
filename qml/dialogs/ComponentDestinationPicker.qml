@@ -258,7 +258,7 @@ Rectangle {
 
         Label {
             Layout.fillWidth: true
-            text: "Select a folder, or type a new path. Use '.' for project root."
+            text: "Edit the path to choose both the parent folder and the package folder name."
             font.pixelSize: 10
             color: Theme.colors.muted
             wrapMode: Text.WordWrap

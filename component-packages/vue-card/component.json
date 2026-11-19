@@ -1,9 +1,0 @@
-{
-  "id": "vue-card",
-  "name": "Vue Card",
-  "description": "A reusable Vue 3 single-file component.",
-  "frameworks": ["vue-vite"],
-  "category": ["Vue Components", "Display"],
-  "activation": "inspect",
-  "files": [{"source": "template/JeridiCard.vue", "target": "JeridiCard.vue"}]
-}

@@ -3,6 +3,8 @@
 #include "componentregistry.h"
 
 #include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QFileInfo>
 #include <QRegularExpression>
 #include <QSaveFile>
@@ -251,6 +253,39 @@ bool ProjectController::createConfiguredProject(const QVariantMap &options)
     return true;
 }
 
+QStringList ProjectController::projectTechnologies() const
+{
+    if (m_activeProjectPath.isEmpty())
+        return {};
+    const QDir project(m_activeProjectPath);
+    QStringList technologies;
+    QFile manifest(project.filePath("package.json"));
+    if (manifest.open(QIODevice::ReadOnly)) {
+        const auto package = QJsonDocument::fromJson(manifest.readAll()).object();
+        const auto dependencies = package.value("dependencies").toObject();
+        const auto development = package.value("devDependencies").toObject();
+        const auto has = [&](const QString &name) {
+            return dependencies.contains(name) || development.contains(name);
+        };
+        if (has("react")) technologies.append("React");
+        if (has("next")) technologies.append("Next.js");
+        if (has("vite")) technologies.append("Vite");
+        QFile components(project.filePath("components.json"));
+        const bool shadcnConfig = components.open(QIODevice::ReadOnly)
+            && QJsonDocument::fromJson(components.readAll()).object().value("$schema")
+                .toString().startsWith("https://ui.shadcn.com/");
+        if (has("shadcn") || shadcnConfig) technologies.append("shadcn");
+        if (has("radix-ui") || has("@radix-ui/react-dialog")) technologies.append("Radix UI");
+        if (has("tailwindcss")) technologies.append("Tailwind CSS");
+        if (has("motion") || has("framer-motion")) technologies.append("Motion");
+        if (has("@mynaui/icons-react")) technologies.append("Mynaui");
+        if (has("express")) technologies.append("Express");
+        if (has("ws")) technologies.append("WebSocket");
+    }
+    if (projectFramework() == "spring-boot") technologies.append("Spring Boot");
+    return technologies;
+}
+
 QString ProjectController::suggestedComponentDirectory(const QString &id) const
 {
     return ProjectScaffolder::suggestedDirectory(m_activeProjectPath,
@@ -472,8 +507,6 @@ void ProjectController::showComponentPreview(const QString &directory)
         return;
     static const QRegularExpression nextRoute(
         QStringLiteral("^(?:src/)?app/([a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)$"));
-    static const QRegularExpression viteDirectory(
-        QStringLiteral("^[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*$"));
     QUrl url;
     if (projectFramework() == "next-js") {
         const auto match = nextRoute.match(directory);
@@ -481,12 +514,14 @@ void ProjectController::showComponentPreview(const QString &directory)
             return;
         url = QUrl(nextServerAddress);
         url.setPath("/" + match.captured(1));
-    } else if (projectFramework() == "react-vite" && viteDirectory.match(directory).hasMatch()) {
-        const QString page = directory + "/preview.html";
-        if (!QFileInfo(QDir(m_activeProjectPath).filePath(page)).isFile())
+    } else if (projectFramework() == "react-vite") {
+        const QDir project(m_activeProjectPath);
+        const QFileInfo page(project.filePath(directory + "/preview.html"));
+        const QString canonical = page.canonicalFilePath();
+        if (!page.isFile() || !isInsideRoot(project.canonicalPath(), canonical))
             return;
         url = QUrl(devServerAddress);
-        url.setPath("/" + page);
+        url.setPath("/" + project.relativeFilePath(canonical));
     }
     if (url.isEmpty())
         return;

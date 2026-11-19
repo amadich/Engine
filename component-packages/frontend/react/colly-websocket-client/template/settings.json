@@ -1,0 +1,7 @@
+{
+  "title": "Realtime console",
+  "endpoint": "ws://127.0.0.1:4000/ws",
+  "history_limit": 20,
+  "send_label": "Send",
+  "previewTitle": "WebSocket Client"
+}

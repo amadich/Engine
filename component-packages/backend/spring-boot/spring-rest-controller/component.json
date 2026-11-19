@@ -1,0 +1,20 @@
+{
+  "id": "spring-rest-controller",
+  "name": "REST Controller",
+  "description": "Spring MVC controller with a simple REST endpoint.",
+  "frameworks": [
+    "spring-boot"
+  ],
+  "category": [
+    "Backend",
+    "Spring Boot",
+    "Web API"
+  ],
+  "activation": "inspect",
+  "files": [
+    {
+      "source": "template/GreetingController.java",
+      "target": "controller/GreetingController.java"
+    }
+  ]
+}

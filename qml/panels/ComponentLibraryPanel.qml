@@ -37,6 +37,98 @@ Rectangle {
     readonly property var selectedDefinition: activeId.length > 0
                                               ? ComponentRegistry.component(activeId) : ({})
 
+    function filesFor(definition) {
+        return (definition.files || []).concat(projectFramework === "react-vite"
+                                              ? (definition.viteFiles || []) : [])
+    }
+
+    Dialog {
+        id: catalogDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        title: "Project technologies and packages"
+        modal: true
+        standardButtons: Dialog.Close
+        width: Math.min(640, parent ? parent.width - 40 : 640)
+        height: Math.min(520, parent ? parent.height - 40 : 520)
+        property var technologies: []
+        onAboutToShow: technologies = root.componentManager.projectController.projectTechnologies()
+
+        contentItem: ColumnLayout {
+            Label {
+                Layout.fillWidth: true
+                text: catalogDialog.technologies.length
+                      ? catalogDialog.technologies.join(" · ") : "No known packages detected."
+                wrapMode: Text.WordWrap
+            }
+            ComboBox {
+                id: technologyFilter
+                Layout.fillWidth: true
+                model: ["All compatible", "shadcn", "Motion", "Mynaui", "WebSocket", "HTTP API"]
+            }
+            ListView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: root.availablePackages.filter(pkg => technologyFilter.currentIndex === 0
+                    || (pkg.technologies || []).includes(technologyFilter.currentText))
+                delegate: ItemDelegate {
+                    required property var modelData
+                    width: ListView.view.width
+                    text: modelData.name + "  ·  " + (modelData.technologies || []).join(", ")
+                    onClicked: {
+                        root.activateComponent(modelData.id)
+                        catalogDialog.close()
+                    }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: detailsDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        title: root.selectedDefinition.name || "Package details"
+        modal: true
+        standardButtons: Dialog.Close
+        width: Math.min(560, parent ? parent.width - 40 : 560)
+        contentItem: ColumnLayout {
+            Label {
+                Layout.fillWidth: true
+                text: root.selectedDefinition.description || ""
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: "Frameworks  ·  " + (root.selectedDefinition.frameworks || []).join(", ")
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: "Install folder  ·  " + (root.installed[root.activeId]
+                    ? root.componentManager.installedDirectory(root.activeId)
+                    : root.componentManager.projectController.suggestedComponentDirectory(root.activeId))
+                wrapMode: Text.WrapAnywhere
+            }
+            Label {
+                Layout.fillWidth: true
+                visible: text.length > 0
+                text: root.selectedDefinition.usage || ""
+                wrapMode: Text.WordWrap
+            }
+            Repeater {
+                model: root.filesFor(root.selectedDefinition)
+                Label {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    text: modelData.target
+                    wrapMode: Text.WrapAnywhere
+                }
+            }
+        }
+    }
+
     property string localSelectedId: ""
     property string filterMode: "all"      // all | installed | favorites
     property string sortMode: "name"       // name | installed
@@ -189,6 +281,12 @@ Rectangle {
             onCollapseRequested: root.setAllExpanded(false)
             onRefreshRequested: root.refreshInstallations()
             onSortRequested: root.sortMode = root.sortMode === "name" ? "installed" : "name"
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Button { text: "Technologies…"; enabled: root.projectOpen; onClicked: catalogDialog.open() }
+            Button { text: "Details…"; enabled: root.projectOpen && !!root.selectedDefinition.id; onClicked: detailsDialog.open() }
         }
 
         Item {

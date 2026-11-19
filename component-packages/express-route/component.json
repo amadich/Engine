@@ -1,9 +1,0 @@
-{
-  "id": "express-route",
-  "name": "Express Router",
-  "description": "TypeScript Express Router example. Import and mount it in src/index.ts.",
-  "frameworks": ["express-ts"],
-  "category": ["Express", "API Routes"],
-  "activation": "inspect",
-  "files": [{"source": "template/example.ts", "target": "routes/example.ts"}]
-}

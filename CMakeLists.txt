@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(JeridiEngine VERSION 0.6.3 LANGUAGES CXX)
+project(JeridiEngine VERSION 0.7.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -38,9 +38,8 @@ qt_add_resources(appJeridiEngine project_templates
 )
 
 # Custom inspectors belong to their package, but compile into the QML module.
-file(GLOB_RECURSE component_inspectors CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/component-packages/*/inspector/*.qml"
-)
+set(component_inspectors ${component_package_files})
+list(FILTER component_inspectors INCLUDE REGEX "/inspector/[^/]+\\.qml$")
 
 # Include icons by directory, including framework icons supplied later.
 # CONFIGURE_DEPENDS reconfigures when a new icon is added to assets/icons/.

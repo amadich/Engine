@@ -1,0 +1,56 @@
+{
+  "id": "express-websocket-echo",
+  "name": "WebSocket Echo Kit",
+  "description": "Enable WebSocket (ws) in the Express wizard. In src/index.ts assign app.listen() to a variable and pass it to attachEcho(server).",
+  "usage": "Enable WebSocket (ws) in the Express wizard. In src/index.ts assign app.listen() to a variable and pass it to attachEcho(server).",
+  "category": [
+    "Backend",
+    "Express",
+    "Realtime"
+  ],
+  "technologies": [
+    "Express",
+    "WebSocket"
+  ],
+  "frameworks": [
+    "express-ts"
+  ],
+  "activation": "inspect",
+  "files": [
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/attachEcho.ts",
+      "target": "attachEcho.ts"
+    }
+  ],
+  "defaultDirectory": "src/integrations/websocket",
+  "requiresNpm": [
+    "express",
+    "ws",
+    "@types/ws"
+  ],
+  "configTarget": "settings.json",
+  "fields": [
+    {
+      "key": "path",
+      "label": "Socket path",
+      "pattern": "^/[a-z0-9/-]+$"
+    },
+    {
+      "key": "allowed_origin",
+      "label": "Browser origin",
+      "pattern": "^https?://[a-zA-Z0-9.-]+(:[0-9]{1,5})?$"
+    },
+    {
+      "key": "max_bytes",
+      "label": "Max payload bytes",
+      "type": "number",
+      "minimum": 1024,
+      "maximum": 65536
+    }
+  ],
+  "settingsHint": "Save configuration and rebuild for production. The development watcher reloads imported settings."
+}

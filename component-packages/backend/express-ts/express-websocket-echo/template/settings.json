@@ -1,0 +1,5 @@
+{
+  "path": "/ws",
+  "allowed_origin": "http://127.0.0.1:3000",
+  "max_bytes": 4096
+}

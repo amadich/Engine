@@ -173,7 +173,8 @@ QVariantMap ComponentInstaller::previewInstall(const QString &projectPath, const
             return result;
         }
         unique.insert(target);
-        const QString sourcePackage = mapping.value("shared").toBool() ? "_shared" : id;
+        const QString sourcePackage = mapping.value("shared").toBool()
+            ? "_shared" : definition.value("resourceDirectory").toString();
         QFile templateFile(QStringLiteral(":/component-packages/%1/%2").arg(sourcePackage, source));
         if (!templateFile.open(QIODevice::ReadOnly) || templateFile.size() == 0) {
             result["error"] = QStringLiteral("Missing package template: ") + source;
@@ -242,7 +243,8 @@ QString ComponentInstaller::install(const QString &projectPath, const QString &i
         if (!error.isEmpty())
             return error;
 
-        const QString sourcePackage = mapping.value("shared").toBool() ? "_shared" : id;
+        const QString sourcePackage = mapping.value("shared").toBool()
+            ? "_shared" : definition.value("resourceDirectory").toString();
         QFile templateFile(QStringLiteral(":/component-packages/%1/%2").arg(sourcePackage, source));
         if (!templateFile.open(QIODevice::ReadOnly))
             return QStringLiteral("Cannot open template: ") + templateFile.fileName();

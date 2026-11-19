@@ -1,0 +1,51 @@
+{
+  "id": "express-status-api",
+  "name": "HTTP Status Kit",
+  "description": "Import statusRouter from the installed folder and call app.use(statusRouter) before app.listen().",
+  "usage": "Import statusRouter from the installed folder and call app.use(statusRouter) before app.listen().",
+  "category": [
+    "Backend",
+    "Express",
+    "HTTP API"
+  ],
+  "technologies": [
+    "Express",
+    "HTTP API"
+  ],
+  "frameworks": [
+    "express-ts"
+  ],
+  "activation": "inspect",
+  "files": [
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/statusRouter.ts",
+      "target": "statusRouter.ts"
+    }
+  ],
+  "defaultDirectory": "src/integrations/status",
+  "requiresNpm": [
+    "express"
+  ],
+  "configTarget": "settings.json",
+  "fields": [
+    {
+      "key": "path",
+      "label": "Route",
+      "pattern": "^/api/[a-z0-9/-]+$"
+    },
+    {
+      "key": "service",
+      "label": "Service name"
+    },
+    {
+      "key": "allowed_origin",
+      "label": "Browser origin",
+      "pattern": "^https?://[a-zA-Z0-9.-]+(:[0-9]{1,5})?$"
+    }
+  ],
+  "settingsHint": "Save configuration and rebuild for production. The development watcher reloads imported settings."
+}

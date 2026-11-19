@@ -1,0 +1,7 @@
+{
+  "title": "API status",
+  "endpoint": "http://127.0.0.1:4000/api/status",
+  "method": "GET",
+  "timeout_ms": 5000,
+  "previewTitle": "HTTP API Client"
+}

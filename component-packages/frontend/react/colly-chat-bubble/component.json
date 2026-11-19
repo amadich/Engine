@@ -1,0 +1,91 @@
+{
+  "id": "colly-chat-bubble",
+  "name": "Chat Bubble",
+  "description": "Colly UI · Next.js and React + Vite",
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "category": [
+    "Frontend",
+    "Colly UI",
+    "Feedback"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/chat-bubble",
+  "preview": true,
+  "configTarget": "settings.json",
+  "settingsHint": "These values drive the live example and the reusable ConfiguredComponent export.",
+  "fields": [
+    {
+      "key": "previewTitle",
+      "label": "Preview title",
+      "defaultValue": "Chat Bubble"
+    },
+    {
+      "key": "content",
+      "label": "Content"
+    },
+    {
+      "key": "color",
+      "label": "Color",
+      "options": [
+        "white",
+        "green",
+        "yellow",
+        "blue"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "source": "template/ChatBubble.tsx",
+      "target": "ChatBubble.tsx"
+    },
+    {
+      "source": "template/LICENSE",
+      "target": "LICENSE"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    }
+  ],
+  "requiresNpm": [
+    "motion",
+    "react",
+    "react-dom"
+  ],
+  "viteDependencies": {
+    "motion": "^12.38.0"
+  },
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ],
+  "technologies": [
+    "React",
+    "Motion"
+  ]
+}

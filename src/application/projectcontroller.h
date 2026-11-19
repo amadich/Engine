@@ -54,6 +54,7 @@ public:
     Q_INVOKABLE bool createProject(const QString &projectName,
                                   const QUrl &parentFolder);
     Q_INVOKABLE bool createConfiguredProject(const QVariantMap &options);
+    Q_INVOKABLE QStringList projectTechnologies() const;
     Q_INVOKABLE QString suggestedComponentDirectory(const QString &id) const;
 
     Q_INVOKABLE bool openProject(const QUrl &folder);

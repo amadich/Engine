@@ -1,0 +1,34 @@
+{
+  "id": "spring-websocket-echo",
+  "name": "Spring WebSocket Echo",
+  "description": "Install below the project Java package. Enable the Spring WebSocket dependency. Configure origin and path through Application Environment, then restart Spring.",
+  "usage": "Install below the project Java package. Enable the Spring WebSocket dependency. Configure origin and path through Application Environment, then restart Spring.",
+  "category": [
+    "Backend",
+    "Spring Boot",
+    "Realtime"
+  ],
+  "technologies": [
+    "Spring Boot",
+    "WebSocket"
+  ],
+  "frameworks": [
+    "spring-boot"
+  ],
+  "activation": "inspect",
+  "files": [
+    {
+      "source": "template/JeridiWebSocketConfig.java",
+      "target": "realtime/JeridiWebSocketConfig.java"
+    }
+  ],
+  "requiresDependencies": [
+    "websocket"
+  ],
+  "settingsPackage": "colly-spring-env",
+  "settingKeys": [
+    "jeridi.websocket.path",
+    "jeridi.websocket.origin",
+    "jeridi.websocket.limit"
+  ]
+}

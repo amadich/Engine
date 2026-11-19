@@ -65,7 +65,8 @@ QString springDependencyXml(const QStringList &items)
         {"actuator", {"spring-boot-starter-actuator"}},
         {"data-jpa", {"spring-boot-starter-data-jpa"}},
         {"devtools", {"spring-boot-devtools"}},
-        {"cache", {"spring-boot-starter-cache"}}
+        {"cache", {"spring-boot-starter-cache"}},
+        {"websocket", {"spring-boot-starter-websocket"}}
     };
     QString xml;
     for (const QString &item : items) {
@@ -98,6 +99,7 @@ QString javascriptExtras(const QString &framework, const QStringList &items, boo
     const QMap<QString, QString> production {
         {"cors", "\"cors\": \"^2.8.5\""},
         {"helmet", "\"helmet\": \"^8.0.0\""},
+        {"websocket", "\"ws\": \"^8.18.0\""},
         {"morgan", "\"morgan\": \"^1.10.0\""},
         {"axios", "\"axios\": \"^1.8.0\""},
         {"router", framework == "vue-vite"
@@ -109,6 +111,7 @@ QString javascriptExtras(const QString &framework, const QStringList &items, boo
     };
     const QMap<QString, QString> dev {
         {"cors", "\"@types/cors\": \"^2.8.17\""},
+        {"websocket", "\"@types/ws\": \"^8.18.0\""},
         {"morgan", "\"@types/morgan\": \"^1.9.9\""}
     };
     QString result;
@@ -215,8 +218,8 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
         {"vue-vite", {"router", "axios", "state"}},
         {"html", {}},
         {"next-js", {}},
-        {"express-ts", {"cors", "helmet", "morgan"}},
-        {"spring-boot", {"security", "validation", "actuator", "data-jpa", "postgresql", "h2", "devtools", "cache"}}
+        {"express-ts", {"cors", "helmet", "morgan", "websocket"}},
+        {"spring-boot", {"security", "validation", "actuator", "data-jpa", "postgresql", "h2", "devtools", "cache", "websocket"}}
     };
     QSet<QString> seen;
     for (const QVariant &value : options.value("dependencies").toList()) {
@@ -352,6 +355,8 @@ QVariantMap ProjectScaffolder::detect(const QString &projectPath)
                     dependencies.append("data-jpa");
                 if (xml.contains("<artifactId>spring-boot-starter-validation</artifactId>"))
                     dependencies.append("validation");
+                if (xml.contains("<artifactId>spring-boot-starter-websocket</artifactId>"))
+                    dependencies.append("websocket");
                 QString packageName;
                 const QString sourceRoot = root.filePath("src/main/java");
                 QDirIterator javaFiles(sourceRoot, {"*.java"}, QDir::Files | QDir::NoSymLinks,
@@ -419,8 +424,13 @@ QString ProjectScaffolder::suggestedDirectory(const QString &projectPath,
     const QString framework = profile.value("framework").toString();
     const QString preferred = definition.value("defaultDirectory").toString();
     if (!preferred.isEmpty()) {
+        if (framework == "express-ts" && profile.value("architecture").toString() == "feature-based"
+            && preferred.startsWith("src/integrations/"))
+            return "src/features/" + QFileInfo(preferred).fileName();
         if (framework == "react-vite" && definition.contains("viteFiles"))
-            return "src/components/colly/" + QFileInfo(preferred).fileName();
+            return (profile.value("architecture").toString() == "feature-based"
+                ? QStringLiteral("src/features/colly/") : QStringLiteral("src/components/colly/"))
+                + QFileInfo(preferred).fileName();
         if (framework == "next-js" && preferred.startsWith("src/app/")
             && !QDir(QDir(projectPath).filePath("src/app")).exists()
             && QDir(QDir(projectPath).filePath("app")).exists())

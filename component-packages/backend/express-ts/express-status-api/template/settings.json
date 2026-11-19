@@ -1,0 +1,5 @@
+{
+  "path": "/api/status",
+  "service": "Jeridi API",
+  "allowed_origin": "http://127.0.0.1:3000"
+}

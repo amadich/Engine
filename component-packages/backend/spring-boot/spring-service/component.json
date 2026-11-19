@@ -1,0 +1,20 @@
+{
+  "id": "spring-service",
+  "name": "Service Class",
+  "description": "Spring service starter for backend business logic.",
+  "frameworks": [
+    "spring-boot"
+  ],
+  "category": [
+    "Backend",
+    "Spring Boot",
+    "Application"
+  ],
+  "activation": "inspect",
+  "files": [
+    {
+      "source": "template/ExampleService.java",
+      "target": "service/ExampleService.java"
+    }
+  ]
+}

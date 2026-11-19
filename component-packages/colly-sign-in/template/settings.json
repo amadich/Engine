@@ -1,7 +1,0 @@
-{
-  "title": "Sign in",
-  "usernameLabel": "Username",
-  "passwordLabel": "Password",
-  "buttonLabel": "Continue",
-  "apiOrigin": "http://127.0.0.1:8080"
-}

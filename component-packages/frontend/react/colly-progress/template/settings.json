@@ -1,0 +1,6 @@
+{
+  "label": "Build progress",
+  "initial": 35,
+  "step": 10,
+  "previewTitle": "Progress Bar"
+}

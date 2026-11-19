@@ -1,0 +1,86 @@
+{
+  "id": "colly-tabs",
+  "name": "Tabs",
+  "description": "Import ConfiguredComponent.tsx into your screen.",
+  "category": [
+    "Frontend",
+    "Colly UI",
+    "Navigation"
+  ],
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "technologies": [
+    "React",
+    "shadcn",
+    "Radix UI"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/tabs",
+  "preview": true,
+  "configTarget": "settings.json",
+  "fields": [
+    {
+      "key": "previewTitle",
+      "label": "Preview title",
+      "defaultValue": "Tabs"
+    },
+    {
+      "key": "first_tab",
+      "label": "First tab"
+    },
+    {
+      "key": "second_tab",
+      "label": "Second tab"
+    },
+    {
+      "key": "first_content",
+      "label": "First content"
+    },
+    {
+      "key": "second_content",
+      "label": "Second content"
+    }
+  ],
+  "usage": "Import ConfiguredComponent.tsx into your screen.",
+  "requiresNpm": [
+    "react",
+    "react-dom",
+    "radix-ui"
+  ],
+  "viteDependencies": {
+    "radix-ui": "^1.4.3"
+  },
+  "files": [
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    }
+  ],
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ]
+}

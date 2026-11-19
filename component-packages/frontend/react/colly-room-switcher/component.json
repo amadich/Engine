@@ -1,0 +1,82 @@
+{
+  "id": "colly-room-switcher",
+  "name": "Room Switcher",
+  "description": "Import ConfiguredComponent.tsx into your screen.",
+  "category": [
+    "Frontend",
+    "Colly UI",
+    "Collaboration"
+  ],
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "technologies": [
+    "React",
+    "Motion"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/room-switcher",
+  "preview": true,
+  "configTarget": "settings.json",
+  "fields": [
+    {
+      "key": "previewTitle",
+      "label": "Preview title",
+      "defaultValue": "Room Switcher"
+    },
+    {
+      "key": "initial_open",
+      "label": "Open initially",
+      "type": "boolean"
+    },
+    {
+      "key": "title",
+      "label": "Title"
+    },
+    {
+      "key": "rooms",
+      "label": "Rooms"
+    }
+  ],
+  "usage": "Import ConfiguredComponent.tsx into your screen.",
+  "requiresNpm": [
+    "react",
+    "react-dom",
+    "motion"
+  ],
+  "viteDependencies": {
+    "motion": "^12.38.0"
+  },
+  "files": [
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    }
+  ],
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ]
+}

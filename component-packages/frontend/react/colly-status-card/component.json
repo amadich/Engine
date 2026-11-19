@@ -1,0 +1,77 @@
+{
+  "id": "colly-status-card",
+  "name": "Status Card",
+  "description": "Colly UI · Next.js and React + Vite",
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "category": [
+    "Frontend",
+    "Colly UI",
+    "Display"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/status-card",
+  "preview": true,
+  "configTarget": "settings.json",
+  "settingsHint": "These values drive the live example and the reusable ConfiguredComponent export.",
+  "fields": [
+    {
+      "key": "previewTitle",
+      "label": "Preview title",
+      "defaultValue": "Status Card"
+    },
+    {
+      "key": "title",
+      "label": "Title"
+    },
+    {
+      "key": "value",
+      "label": "Value"
+    },
+    {
+      "key": "description",
+      "label": "Description"
+    }
+  ],
+  "files": [
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    }
+  ],
+  "requiresNpm": [
+    "react",
+    "react-dom"
+  ],
+  "viteDependencies": {},
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ],
+  "technologies": [
+    "React"
+  ]
+}

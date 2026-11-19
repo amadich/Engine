@@ -1,9 +1,0 @@
-{
-  "id": "html-card",
-  "name": "HTML Card",
-  "description": "Accessible static HTML card snippet.",
-  "frameworks": ["html"],
-  "category": ["HTML", "Snippets"],
-  "activation": "inspect",
-  "files": [{"source": "template/card.html", "target": "components/card.html"}]
-}

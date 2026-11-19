@@ -389,7 +389,7 @@ QString ComponentManager::draftConfiguration(const QString &id) const
         if (mapping.value("target").toString() != configTarget)
             continue;
         QFile source(QStringLiteral(":/component-packages/%1/%2")
-                         .arg(id, mapping.value("source").toString()));
+                         .arg(definition.value("resourceDirectory").toString(), mapping.value("source").toString()));
         if (!source.open(QIODevice::ReadOnly))
             return {};
         return QString::fromUtf8(source.readAll());

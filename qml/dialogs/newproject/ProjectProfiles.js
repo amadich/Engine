@@ -36,6 +36,7 @@ function architectureOptions(framework) {
 }
 function dependencyOptions(framework) {
     if (framework === "spring-boot") return [
+        { key: "websocket", name: "Spring WebSocket", group: "Realtime", artifact: "spring-boot-starter-websocket", detail: "WebSocket handlers and handshake support", description: "Enables the Spring WebSocket Echo package." },
         { key: "security", name: "Spring Security + JWT", group: "Security", artifact: "spring-boot-starter-security + oauth2-resource-server", detail: "Security filter chain and JWT resource-server support", description: "Adds Spring Security and OAuth2 Resource Server dependencies. Enables Jeridi's JWT component packages. You must configure issuer, keys and authentication for production." },
         { key: "validation", name: "Validation", group: "Web", artifact: "spring-boot-starter-validation", detail: "Jakarta Bean Validation", description: "Adds Jakarta Validation annotations and the validation provider. Useful for validating request bodies and service inputs." },
         { key: "actuator", name: "Spring Boot Actuator", group: "Operations", artifact: "spring-boot-starter-actuator", detail: "Health, metrics and application information", description: "Adds production-ready health and metrics endpoints. Review which endpoints are exposed before deployment." },
@@ -46,6 +47,7 @@ function dependencyOptions(framework) {
         { key: "cache", name: "Spring Cache", group: "Performance", artifact: "spring-boot-starter-cache", detail: "Caching abstraction", description: "Adds the Spring caching abstraction. Cache provider and configuration remain under your control." }
     ]
     if (framework === "express-ts") return [
+        { key: "websocket", name: "WebSocket (ws)", group: "Realtime", artifact: "ws + @types/ws", detail: "WebSocket server and TypeScript declarations", description: "Enables the Express WebSocket Echo package." },
         { key: "cors", name: "CORS", group: "Security", artifact: "cors + @types/cors", detail: "Cross-origin request middleware", description: "Registers CORS middleware with a configurable development origin (CORS_ORIGIN). Restrict origins for production." },
         { key: "helmet", name: "Helmet", group: "Security", artifact: "helmet", detail: "HTTP security headers", description: "Adds Helmet and registers it on the Express application to set common security-related HTTP headers." },
         { key: "morgan", name: "Morgan", group: "Observability", artifact: "morgan + @types/morgan", detail: "HTTP request logging", description: "Adds Morgan and registers its development request logger in the generated Express server." }

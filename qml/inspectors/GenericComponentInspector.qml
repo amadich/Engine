@@ -11,6 +11,8 @@ Item {
     required property string componentId
 
     readonly property var definition: ComponentRegistry.component(componentId)
+    readonly property var packageFiles: (definition.files || []).concat(
+        controller.projectFramework === "react-vite" ? (definition.viteFiles || []) : [])
     property bool installed: false
 
     readonly property string settingsId: String(definition.settingsPackage || componentId)
@@ -23,9 +25,7 @@ Item {
     readonly property string directory: installed
         ? componentManager.installedDirectory(componentId) : ""
     readonly property bool hasPreview: installed && definition.preview === true
-        && ((controller.projectFramework === "react-vite"
-             && /^[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*$/.test(directory))
-            || /^(src\/)?app\/[a-zA-Z0-9_/-]+$/.test(directory))
+        && (controller.projectFramework === "react-vite" || /^(src\/)?app\/[a-zA-Z0-9_/-]+$/.test(directory))
     property string original: ""
     property var values: ({})
     property bool loaded: false
@@ -95,6 +95,8 @@ Item {
                     return
                 }
                 updated[field.key] = number
+            } else if (field.type === "boolean") {
+                updated[field.key] = input === "true"
             } else {
                 updated[field.key] = input
             }
@@ -176,7 +178,8 @@ Item {
                         Layout.fillWidth: true
                         enabled: root.loaded
                         sourceComponent: fieldRow.modelData.options ? choiceEditor
-                            : fieldRow.modelData.type === "number" ? numberEditor : textEditor
+                            : fieldRow.modelData.type === "number" ? numberEditor
+                            : fieldRow.modelData.type === "boolean" ? toggleEditor : textEditor
                     }
                     Component {
                         id: textEditor
@@ -192,6 +195,14 @@ Item {
                             model: fieldRow.modelData.options
                             currentIndex: fieldRow.modelData.options.indexOf(fieldRow.settingValue)
                             onActivated: root.updateValue(fieldRow.modelData.key, currentText)
+                        }
+                    }
+                    Component {
+                        id: toggleEditor
+                        InspectorToggle {
+                            checked: fieldRow.settingValue === "true"
+                            text: checked ? "On" : "Off"
+                            onToggled: root.updateValue(fieldRow.modelData.key, checked)
                         }
                     }
                     Component {
@@ -217,13 +228,32 @@ Item {
 
         InspectorSection {
             Layout.fillWidth: true
+            filterAllowed: !!root.definition.usage || (root.definition.technologies || []).length > 0
+            title: "Integration"
+            filterQuery: inspectorShell.filterText
+            filterKeywords: "integration dependencies framework technologies usage"
+            Label {
+                Layout.fillWidth: true
+                text: (root.definition.technologies || root.definition.frameworks || []).join(" · ")
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                Layout.fillWidth: true
+                visible: text.length > 0
+                text: root.definition.usage || ""
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        InspectorSection {
+            Layout.fillWidth: true
             title: "Package Contents"
             filterQuery: inspectorShell.filterText
             filterKeywords: "files contents source package java tsx vue json"
             iconSource: "qrc:/engine/assets/icons/file.svg"
-            tag: String((root.definition.files || []).length) + " FILES"
+            tag: String(root.packageFiles.length) + " FILES"
             Repeater {
-                model: root.definition.files || []
+                model: root.packageFiles
                 RowLayout {
                     required property var modelData
                     Layout.fillWidth: true

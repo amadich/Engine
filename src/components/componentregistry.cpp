@@ -117,7 +117,10 @@ void ComponentRegistry::loadPackages()
             continue;
         }
 
-        m_components.insert(id, json.toVariantMap());
+        auto definition = json.toVariantMap();
+        definition.insert("resourceDirectory", QFileInfo(manifestPath).path().mid(
+            QStringLiteral(":/component-packages/").size()));
+        m_components.insert(id, definition);
         m_order.append(id);
 
         Node *parentNode = m_root.get();
@@ -207,5 +210,5 @@ QUrl ComponentRegistry::inspectorUrl(const QString &id) const
     const QString path = m_components.value(id).value("inspector").toString();
     if (!safeRelativePath(path) || !path.startsWith("inspector/") || !path.endsWith(".qml"))
         return {};
-    return QUrl(QStringLiteral("qrc:/qt/qml/JeridiEngine/packages/%1/%2").arg(id, path));
+    return QUrl(QStringLiteral("qrc:/qt/qml/JeridiEngine/packages/%1/%2").arg(m_components.value(id).value("resourceDirectory").toString(), path));
 }

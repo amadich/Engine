@@ -1,0 +1,82 @@
+{
+  "id": "colly-profile-editor",
+  "name": "Profile Editor",
+  "description": "Import ConfiguredComponent.tsx into your screen.",
+  "category": [
+    "Frontend",
+    "Colly UI",
+    "Account"
+  ],
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "technologies": [
+    "React"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/profile-editor",
+  "preview": true,
+  "configTarget": "settings.json",
+  "fields": [
+    {
+      "key": "previewTitle",
+      "label": "Preview title",
+      "defaultValue": "Profile Editor"
+    },
+    {
+      "key": "show_bio",
+      "label": "Show bio",
+      "type": "boolean"
+    },
+    {
+      "key": "title",
+      "label": "Title"
+    },
+    {
+      "key": "display_name",
+      "label": "Display name"
+    },
+    {
+      "key": "bio",
+      "label": "Bio"
+    }
+  ],
+  "usage": "Import ConfiguredComponent.tsx into your screen.",
+  "requiresNpm": [
+    "react",
+    "react-dom"
+  ],
+  "viteDependencies": {},
+  "files": [
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    }
+  ],
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ]
+}

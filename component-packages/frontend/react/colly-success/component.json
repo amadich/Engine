@@ -1,0 +1,113 @@
+{
+  "id": "colly-success",
+  "name": "Success Dialog",
+  "description": "Colly UI · Next.js and React + Vite",
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "category": [
+    "Frontend",
+    "Colly UI",
+    "Feedback"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/success",
+  "preview": true,
+  "configTarget": "settings.json",
+  "settingsHint": "These values drive the live example and the reusable ConfiguredComponent export.",
+  "fields": [
+    {
+      "key": "previewTitle",
+      "label": "Preview title",
+      "defaultValue": "Success Dialog"
+    },
+    {
+      "key": "label",
+      "label": "Label"
+    },
+    {
+      "key": "title",
+      "label": "Title"
+    },
+    {
+      "key": "description",
+      "label": "Description"
+    }
+  ],
+  "files": [
+    {
+      "source": "template/LICENSE",
+      "target": "LICENSE"
+    },
+    {
+      "source": "template/SuccessDialog.tsx",
+      "target": "SuccessDialog.tsx"
+    },
+    {
+      "source": "template/alert-dialog.tsx",
+      "target": "alert-dialog.tsx"
+    },
+    {
+      "source": "template/button.tsx",
+      "target": "button.tsx"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/utils.ts",
+      "target": "utils.ts"
+    },
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    }
+  ],
+  "requiresNpm": [
+    "class-variance-authority",
+    "clsx",
+    "lucide-react",
+    "motion",
+    "radix-ui",
+    "react",
+    "react-dom",
+    "tailwind-merge"
+  ],
+  "viteDependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.14.0",
+    "motion": "^12.38.0",
+    "radix-ui": "^1.4.3",
+    "tailwind-merge": "^3.5.0"
+  },
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ],
+  "technologies": [
+    "React",
+    "shadcn",
+    "Radix UI",
+    "Motion"
+  ]
+}

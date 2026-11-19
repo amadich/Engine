@@ -1,0 +1,26 @@
+{
+  "id": "card",
+  "frameworks": [
+    "react-vite"
+  ],
+  "name": "Card",
+  "category": [
+    "Frontend",
+    "UI Components",
+    "Display"
+  ],
+  "activation": "inspect",
+  "inspector": "inspector/CardInspector.qml",
+  "legacyDirectory": "src/components/card",
+  "configTarget": "card.config.json",
+  "files": [
+    {
+      "source": "template/EngineCard.tsx",
+      "target": "EngineCard.tsx"
+    },
+    {
+      "source": "template/card.config.json",
+      "target": "card.config.json"
+    }
+  ]
+}

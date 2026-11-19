@@ -203,7 +203,10 @@ Item {
             componentManager: root.componentManager
             selectedComponentId: root.selectedComponentId
             onInstallComponentRequested: function(id) { root.installComponentRequested(id) }
-            onComponentSelected: function(id) { root.selectedComponentId = id }
+            onComponentSelected: function(id) {
+                root.selectedComponentId = id
+                root.setPanelVisible("inspector", true)
+            }
         }
     }
 

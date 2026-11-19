@@ -55,7 +55,7 @@ Dialog {
         framework = id
         architecture = Profiles.isBackend(id) ? "layered" : "standard"
         dependencies = []
-        serverPort = id === "spring-boot" ? "8080" : "3000"
+        serverPort = id === "spring-boot" ? "8080" : id === "express-ts" ? "4000" : "3000"
         const packages = Profiles.dependencyOptions(id)
         selectedDependency = packages.length ? packages[0].key : ""
         installNow = false

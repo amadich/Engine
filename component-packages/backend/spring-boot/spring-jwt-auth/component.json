@@ -1,0 +1,34 @@
+{
+  "id": "spring-jwt-auth",
+  "name": "JWT Authentication Kit",
+  "description": "Spring Security foundation: SecurityFilterChain, JwtService and AuthController. Requires a strong JERIDI_JWT_SECRET environment variable and a real identity store before production use.",
+  "frameworks": [
+    "spring-boot"
+  ],
+  "requiresDependencies": [
+    "security"
+  ],
+  "category": [
+    "Backend",
+    "Spring Boot",
+    "Spring Security"
+  ],
+  "activation": "inspect",
+  "files": [
+    {
+      "source": "template/JwtSecurityConfig.java",
+      "target": "security/JwtSecurityConfig.java"
+    },
+    {
+      "source": "template/JwtService.java",
+      "target": "security/JwtService.java"
+    },
+    {
+      "source": "template/AuthController.java",
+      "target": "security/AuthController.java"
+    }
+  ],
+  "conflicts": [
+    "colly-spring-auth"
+  ]
+}
