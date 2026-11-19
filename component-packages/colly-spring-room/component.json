@@ -1,0 +1,41 @@
+{
+  "id": "colly-spring-room",
+  "name": "Room CRUD \u00b7 JPA",
+  "frameworks": [
+    "spring-boot"
+  ],
+  "category": [
+    "Spring Boot",
+    "Persistence"
+  ],
+  "description": "Colly-inspired Room slice with an entity, repository, transactional service, DTO and REST controller.",
+  "activation": "inspect",
+  "requiresDependencies": [
+    "data-jpa",
+    "validation",
+    "security"
+  ],
+  "files": [
+    {
+      "source": "template/Room.java",
+      "target": "rooms/Room.java"
+    },
+    {
+      "source": "template/RoomRepository.java",
+      "target": "rooms/RoomRepository.java"
+    },
+    {
+      "source": "template/RoomService.java",
+      "target": "rooms/RoomService.java"
+    },
+    {
+      "source": "template/RoomController.java",
+      "target": "rooms/RoomController.java"
+    }
+  ],
+  "settingsPackage": "colly-spring-env",
+  "settingKeys": [
+    "jeridi.rooms.path"
+  ],
+  "settingsHint": "Install Application Environment to apply these settings at runtime. Restart Spring Boot after saving."
+}

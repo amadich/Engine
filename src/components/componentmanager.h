@@ -53,6 +53,7 @@ signals:
     void logMessage(const QString &message);
 
 private:
+    QVariantMap activeDefinition(const QString &id) const;
     ProjectController *m_projectController = nullptr;
     QHash<QString, QString> m_drafts;
 };

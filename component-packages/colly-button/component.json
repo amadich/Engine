@@ -1,0 +1,105 @@
+{
+  "id": "colly-button",
+  "name": "Button",
+  "description": "Colly UI · Next.js and React + Vite",
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "category": [
+    "Colly UI",
+    "Inputs"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/button",
+  "preview": true,
+  "configTarget": "settings.json",
+  "settingsHint": "These values drive the live example and the reusable ConfiguredComponent export.",
+  "fields": [
+    {
+      "key": "label",
+      "label": "Label"
+    },
+    {
+      "key": "variant",
+      "label": "Variant",
+      "options": [
+        "default",
+        "outline",
+        "secondary",
+        "ghost",
+        "destructive",
+        "link"
+      ],
+      "defaultValue": "default"
+    },
+    {
+      "key": "size",
+      "label": "Size",
+      "options": [
+        "default",
+        "xs",
+        "sm",
+        "lg"
+      ],
+      "defaultValue": "default"
+    }
+  ],
+  "files": [
+    {
+      "source": "template/LICENSE",
+      "target": "LICENSE"
+    },
+    {
+      "source": "template/button.tsx",
+      "target": "button.tsx"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/utils.ts",
+      "target": "utils.ts"
+    },
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    }
+  ],
+  "requiresNpm": [
+    "class-variance-authority",
+    "clsx",
+    "radix-ui",
+    "react",
+    "react-dom",
+    "tailwind-merge"
+  ],
+  "viteDependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "radix-ui": "^1.4.3",
+    "tailwind-merge": "^3.5.0"
+  },
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ]
+}

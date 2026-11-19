@@ -1,7 +1,3 @@
-target/
-.idea/
-.settings/
-.project
-.classpath
-.DS_Store
-.env
+/target/
+/.env
+/.env.local

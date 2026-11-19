@@ -1,0 +1,83 @@
+{
+  "id": "colly-spring-env",
+  "name": "Application Environment",
+  "frameworks": [
+    "spring-boot"
+  ],
+  "category": [
+    "Spring Boot",
+    "Configuration"
+  ],
+  "description": "External Spring configuration for JWT transport, server port and database environment variables.",
+  "activation": "inspect",
+  "requiresDependencies": [],
+  "files": [
+    {
+      "source": "template/application.properties",
+      "target": "application.properties"
+    },
+    {
+      "source": "template/colly.env.example",
+      "target": "colly.env.example"
+    }
+  ],
+  "defaultDirectory": "config",
+  "configTarget": "application.properties",
+  "configFormat": "properties",
+  "fields": [
+    {
+      "key": "server.port",
+      "label": "Server port",
+      "type": "number",
+      "minimum": 1024,
+      "maximum": 65535
+    },
+    {
+      "key": "jeridi.auth.cookie",
+      "label": "Cookie mode",
+      "pattern": "^(true|false)$",
+      "options": [
+        "false",
+        "true"
+      ]
+    },
+    {
+      "key": "jeridi.auth.cookie-secure",
+      "label": "Secure cookie",
+      "pattern": "^(true|false)$",
+      "options": [
+        "false",
+        "true"
+      ]
+    },
+    {
+      "key": "jeridi.auth.ttl-seconds",
+      "label": "JWT lifetime (s)",
+      "type": "number",
+      "minimum": 60,
+      "maximum": 86400
+    },
+    {
+      "key": "jeridi.auth.cors-origin",
+      "label": "Browser origin",
+      "pattern": "^https?://[a-zA-Z0-9.-]+(:[0-9]{1,5})?$"
+    },
+    {
+      "key": "spring.jpa.hibernate.ddl-auto",
+      "label": "Schema mode",
+      "pattern": "^(none|validate|update)$",
+      "options": [
+        "none",
+        "validate",
+        "update"
+      ]
+    },
+    {
+      "key": "jeridi.rooms.path",
+      "label": "Rooms endpoint",
+      "pattern": "^/api/v1/[a-z][a-z0-9-]{0,50}$"
+    }
+  ],
+  "settingsHint": "Restart Spring Boot after applying these values.",
+  "requiredDirectory": "config"
+}

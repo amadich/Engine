@@ -16,13 +16,14 @@
 
 namespace {
 
-QString frameworkKind(const QString &framework)
+const QMap<QString, QString> &frameworkKinds()
 {
-    if (QStringList{"react-vite", "vue-vite", "html"}.contains(framework))
-        return "frontend";
-    if (QStringList{"express-ts", "spring-boot"}.contains(framework))
-        return "backend";
-    return {};
+    static const QMap<QString, QString> kinds{
+        {"react-vite", "frontend"}, {"next-js", "frontend"},
+        {"vue-vite", "frontend"}, {"html", "frontend"},
+        {"express-ts", "backend"}, {"spring-boot", "backend"}
+    };
+    return kinds;
 }
 
 QString toJavaClass(const QString &name)
@@ -68,6 +69,11 @@ QString springDependencyXml(const QStringList &items)
     };
     QString xml;
     for (const QString &item : items) {
+        if (item == "h2") {
+            xml += "    <dependency><groupId>com.h2database</groupId>"
+                   "<artifactId>h2</artifactId><scope>runtime</scope></dependency>\n";
+            continue;
+        }
         if (item == "postgresql") {
             xml += QStringLiteral("    <dependency>\n"
                                   "      <groupId>org.postgresql</groupId>\n"
@@ -149,13 +155,23 @@ bool validatePackage(const QString &name)
 
 }
 
+QStringList ProjectScaffolder::supportedFrameworks()
+{
+    QStringList frameworks;
+    for (const auto &id : frameworkKinds().keys()) {
+        if (QDir(":/project-templates/" + id + "/common").exists())
+            frameworks.append(id);
+    }
+    return frameworks;
+}
+
 ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
 {
     Result result;
     const QString name = options.value("name").toString().trimmed();
     const QUrl parentUrl = options.value("parentFolder").toUrl();
-    result.framework = options.value("framework").toString();
-    result.kind = frameworkKind(result.framework);
+    result.framework = options.value("framework").toString().trimmed().toLower();
+    result.kind = frameworkKinds().value(result.framework);
     result.architecture = options.value("architecture").toString();
     result.packageName = options.value("packageName").toString().trimmed();
     const QRegularExpression safeName(QStringLiteral("^[a-z][a-z0-9_-]{0,63}$"));
@@ -173,7 +189,7 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
         return result;
     }
     if (result.kind.isEmpty()) {
-        result.error = "Unsupported project framework.";
+        result.error = "Unsupported project framework: " + result.framework;
         return result;
     }
     const QStringList allowedArchitectures = result.framework == "spring-boot"
@@ -198,8 +214,9 @@ ProjectScaffolder::Result ProjectScaffolder::create(const QVariantMap &options)
         {"react-vite", {"router", "axios", "state"}},
         {"vue-vite", {"router", "axios", "state"}},
         {"html", {}},
+        {"next-js", {}},
         {"express-ts", {"cors", "helmet", "morgan"}},
-        {"spring-boot", {"security", "validation", "actuator", "data-jpa", "postgresql", "devtools", "cache"}}
+        {"spring-boot", {"security", "validation", "actuator", "data-jpa", "postgresql", "h2", "devtools", "cache"}}
     };
     QSet<QString> seen;
     for (const QVariant &value : options.value("dependencies").toList()) {
@@ -316,7 +333,7 @@ QVariantMap ProjectScaffolder::detect(const QString &projectPath)
         if (document.isObject()) {
             const auto obj = document.object();
             const QString framework = obj.value("framework").toString();
-            if (frameworkKind(framework) == obj.value("kind").toString()
+            if (frameworkKinds().value(framework) == obj.value("kind").toString()
                 && obj.value("schemaVersion").toInt() == 1)
                 return obj.toVariantMap();
         }
@@ -324,9 +341,41 @@ QVariantMap ProjectScaffolder::detect(const QString &projectPath)
     if (QFileInfo::exists(root.filePath("pom.xml"))) {
         // Treat externally created Maven projects conservatively.
         QFile pom(root.filePath("pom.xml"));
-        if (pom.open(QIODevice::ReadOnly) && pom.readAll().contains("spring-boot"))
-            return {{"kind", "backend"}, {"framework", "spring-boot"},
-                    {"architecture", "layered"}};
+        if (pom.open(QIODevice::ReadOnly)) {
+            const QByteArray xml = pom.readAll();
+            if (xml.contains("spring-boot")) {
+                QStringList dependencies;
+                if (xml.contains("<artifactId>spring-boot-starter-security</artifactId>")
+                    && xml.contains("<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>"))
+                    dependencies.append("security");
+                if (xml.contains("<artifactId>spring-boot-starter-data-jpa</artifactId>"))
+                    dependencies.append("data-jpa");
+                if (xml.contains("<artifactId>spring-boot-starter-validation</artifactId>"))
+                    dependencies.append("validation");
+                QString packageName;
+                const QString sourceRoot = root.filePath("src/main/java");
+                QDirIterator javaFiles(sourceRoot, {"*.java"}, QDir::Files | QDir::NoSymLinks,
+                                       QDirIterator::Subdirectories);
+                while (javaFiles.hasNext()) {
+                    QFile source(javaFiles.next());
+                    if (source.size() > 128 * 1024 || !source.open(QIODevice::ReadOnly)
+                        || !source.readAll().contains("@SpringBootApplication"))
+                        continue;
+                    QString candidate = QDir(sourceRoot).relativeFilePath(QFileInfo(source).path());
+                    candidate.replace('/', '.');
+                    if (!validatePackage(candidate))
+                        continue;
+                    if (!packageName.isEmpty() && packageName != candidate) {
+                        packageName.clear();
+                        break;
+                    }
+                    packageName = candidate;
+                }
+                return {{"kind", "backend"}, {"framework", "spring-boot"},
+                        {"architecture", "layered"}, {"dependencies", dependencies},
+                        {"packageName", packageName}};
+            }
+        }
     }
     if (QFileInfo::exists(root.filePath("package.json"))) {
         QFile pkg(root.filePath("package.json"));
@@ -334,6 +383,9 @@ QVariantMap ProjectScaffolder::detect(const QString &projectPath)
             const auto d = QJsonDocument::fromJson(pkg.readAll());
             const auto deps = d.object().value("dependencies").toObject();
             const auto dev = d.object().value("devDependencies").toObject();
+            if (deps.contains("next") || dev.contains("next"))
+                return {{"kind", "frontend"}, {"framework", "next-js"},
+                        {"architecture", "standard"}};
             if (deps.contains("react") && dev.contains("vite"))
                 return {{"kind", "frontend"}, {"framework", "react-vite"},
                         {"architecture", "standard"}};
@@ -365,6 +417,16 @@ QString ProjectScaffolder::suggestedDirectory(const QString &projectPath,
 {
     const QVariantMap profile = detect(projectPath);
     const QString framework = profile.value("framework").toString();
+    const QString preferred = definition.value("defaultDirectory").toString();
+    if (!preferred.isEmpty()) {
+        if (framework == "react-vite" && definition.contains("viteFiles"))
+            return "src/components/colly/" + QFileInfo(preferred).fileName();
+        if (framework == "next-js" && preferred.startsWith("src/app/")
+            && !QDir(QDir(projectPath).filePath("src/app")).exists()
+            && QDir(QDir(projectPath).filePath("app")).exists())
+            return preferred.mid(4);
+        return preferred;
+    }
     if (framework == "spring-boot") {
         const QString name = profile.value("packageName").toString();
         if (validatePackage(name))

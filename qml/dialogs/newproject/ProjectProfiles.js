@@ -3,6 +3,7 @@
 // Registry of templates actually implemented by ProjectScaffolder.
 // Do not advertise generators that have no corresponding project template.
 var frontend = [
+    { id: "next-js", name: "Next.js · Colly", detail: "App Router · Tailwind CSS", icon: "react.svg", runtime: "Node.js 20.9+", family: "Frontend" },
     { id: "react-vite", name: "React + Vite", detail: "TypeScript · SPA", icon: "react.svg", runtime: "Node.js 20+", family: "Frontend" },
     { id: "vue-vite", name: "Vue + Vite", detail: "Vue 3 · TypeScript", icon: "vuejs.svg", runtime: "Node.js 20+", family: "Frontend" },
     { id: "html", name: "HTML / CSS / JS", detail: "Static website", icon: "html5.svg", runtime: "Browser", family: "Frontend" }
@@ -39,6 +40,7 @@ function dependencyOptions(framework) {
         { key: "validation", name: "Validation", group: "Web", artifact: "spring-boot-starter-validation", detail: "Jakarta Bean Validation", description: "Adds Jakarta Validation annotations and the validation provider. Useful for validating request bodies and service inputs." },
         { key: "actuator", name: "Spring Boot Actuator", group: "Operations", artifact: "spring-boot-starter-actuator", detail: "Health, metrics and application information", description: "Adds production-ready health and metrics endpoints. Review which endpoints are exposed before deployment." },
         { key: "data-jpa", name: "Spring Data JPA", group: "Persistence", artifact: "spring-boot-starter-data-jpa", detail: "Repositories, ORM and transactions", description: "Adds JPA and Hibernate. A database configuration is needed before launching an application that uses JPA." },
+        { key: "h2", name: "H2 (local development)", group: "Persistence", artifact: "com.h2database:h2", detail: "Embedded development database", description: "Pair with Spring Data JPA for a local database. Choose PostgreSQL for a persistent deployment." },
         { key: "postgresql", name: "PostgreSQL Driver", group: "Persistence", artifact: "org.postgresql:postgresql", detail: "JDBC runtime driver", description: "Adds the PostgreSQL JDBC driver. Set the database URL and credentials yourself using environment variables or external configuration." },
         { key: "devtools", name: "Spring Boot DevTools", group: "Development", artifact: "spring-boot-devtools", detail: "Development-time restart helpers", description: "Adds Spring Boot DevTools to the Maven project for local development." },
         { key: "cache", name: "Spring Cache", group: "Performance", artifact: "spring-boot-starter-cache", detail: "Caching abstraction", description: "Adds the Spring caching abstraction. Cache provider and configuration remain under your control." }
@@ -65,6 +67,7 @@ function previewPaths(framework, architecture, packageName) {
     if (framework === "express-ts") return [
         "package.json", "tsconfig.json", "src/index.ts", architecture === "feature-based" ? "src/features/health/" : "src/routes/", "src/middleware/", ".env.example", ".jeridi/project.json"
     ]
+    if (framework === "next-js") return ["package.json", "postcss.config.mjs", "components.json", "src/app/layout.tsx", "src/app/page.tsx", "src/app/library/", ".jeridi/project.json"]
     if (framework === "html") return ["index.html", "styles.css", "app.js", architecture === "feature-based" ? "features/" : "assets/", ".jeridi/project.json"]
     return ["package.json", "vite.config.ts", "index.html", "src/", framework === "react-vite" ? "  App.tsx" : "  App.vue", architecture === "feature-based" ? "  features/" : "  components/", ".jeridi/project.json"]
 }

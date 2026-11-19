@@ -15,6 +15,7 @@ class ProjectController : public QObject
     Q_OBJECT
     QML_ELEMENT
 
+    Q_PROPERTY(QStringList supportedProjectFrameworks READ supportedProjectFrameworks CONSTANT)
     Q_PROPERTY(QString activeProjectName READ activeProjectName NOTIFY activeProjectChanged)
     Q_PROPERTY(QString activeProjectPath READ activeProjectPath NOTIFY activeProjectChanged)
     Q_PROPERTY(QUrl projectFolderUrl READ projectFolderUrl NOTIFY activeProjectChanged)
@@ -32,6 +33,7 @@ class ProjectController : public QObject
 public:
     explicit ProjectController(QObject *parent = nullptr);
 
+    QStringList supportedProjectFrameworks() const;
     QString activeProjectName() const;
     QString activeProjectPath() const;
     QUrl projectFolderUrl() const;
@@ -47,6 +49,7 @@ public:
 
     Q_INVOKABLE void startDevServer();
     Q_INVOKABLE void stopDevServer();
+    Q_INVOKABLE void showComponentPreview(const QString &directory);
 
     Q_INVOKABLE bool createProject(const QString &projectName,
                                   const QUrl &parentFolder);
@@ -84,6 +87,7 @@ signals:
     void outputReceived(const QString &text);
     void projectCreated(const QString &projectName, const QString &projectPath);
     void previewUrlChanged();
+    void packagePreviewRequested();
     void lastProjectErrorChanged();
 
 private:

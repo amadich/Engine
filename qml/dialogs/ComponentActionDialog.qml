@@ -23,6 +23,7 @@ Dialog {
     readonly property string componentName: definition.name || "Component"
     readonly property bool isPlacement: operation !== "remove"
     readonly property string errorText: String(actionError || preview.error || "")
+    readonly property var npmAdditions: preview.npmAdditions || []
     readonly property int fileCount: (preview.files || []).length
     readonly property int referenceCount: (preview.references || []).length
     readonly property int collisionCount: (preview.collisions || []).length
@@ -303,6 +304,14 @@ Dialog {
                                     color: Theme.colors.muted
                                     font.pixelSize: 12
                                 }
+                            }
+                            Label {
+                                Layout.fillWidth: true
+                                visible: root.npmAdditions.length > 0
+                                text: "Adds to package.json: " + root.npmAdditions.join(", ")
+                                      + ". Run Install Dependencies afterward."
+                                color: Theme.colors.text
+                                wrapMode: Text.WordWrap
                             }
                             Repeater {
                                 model: root.preview.files || []

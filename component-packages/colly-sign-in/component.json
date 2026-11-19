@@ -1,0 +1,106 @@
+{
+  "id": "colly-sign-in",
+  "name": "Cookie Sign-in Form",
+  "description": "Colly UI · Next.js and React + Vite",
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "category": [
+    "Colly UI",
+    "Authentication"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/sign-in",
+  "preview": true,
+  "configTarget": "settings.json",
+  "settingsHint": "Connect this form to the Spring Colly Authentication Kit in cookie mode.",
+  "fields": [
+    {
+      "key": "title",
+      "label": "Title"
+    },
+    {
+      "key": "usernameLabel",
+      "label": "Username label"
+    },
+    {
+      "key": "passwordLabel",
+      "label": "Password label"
+    },
+    {
+      "key": "buttonLabel",
+      "label": "Button label"
+    },
+    {
+      "key": "apiOrigin",
+      "label": "API origin",
+      "pattern": "^https?://[a-zA-Z0-9.-]+(:[0-9]{1,5})?$"
+    }
+  ],
+  "requiresNpm": [
+    "react",
+    "react-dom",
+    "radix-ui",
+    "class-variance-authority",
+    "clsx",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    },
+    {
+      "source": "template/LICENSE",
+      "target": "LICENSE"
+    },
+    {
+      "source": "template/button.tsx",
+      "target": "button.tsx"
+    },
+    {
+      "source": "template/input.tsx",
+      "target": "input.tsx"
+    },
+    {
+      "source": "template/label.tsx",
+      "target": "label.tsx"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    },
+    {
+      "source": "template/utils.ts",
+      "target": "utils.ts"
+    }
+  ],
+  "viteDependencies": {
+    "radix-ui": "^1.4.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.5.0"
+  },
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ]
+}

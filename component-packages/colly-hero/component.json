@@ -1,0 +1,90 @@
+{
+  "id": "colly-hero",
+  "name": "Animated Hero",
+  "description": "Colly UI · Next.js and React + Vite",
+  "frameworks": [
+    "next-js",
+    "react-vite"
+  ],
+  "category": [
+    "Colly UI",
+    "Marketing"
+  ],
+  "activation": "inspect",
+  "defaultDirectory": "src/app/library/hero",
+  "preview": true,
+  "configTarget": "settings.json",
+  "settingsHint": "These values drive the live example and the reusable ConfiguredComponent export.",
+  "fields": [
+    {
+      "key": "title",
+      "label": "Title"
+    },
+    {
+      "key": "description",
+      "label": "Description"
+    },
+    {
+      "key": "label",
+      "label": "Action label"
+    },
+    {
+      "key": "href",
+      "label": "Action path",
+      "pattern": "^/(?![/\\\\])[a-zA-Z0-9/_#?&=.%~-]*$"
+    },
+    {
+      "key": "imageAlt",
+      "label": "Image description"
+    }
+  ],
+  "requiresNpm": [
+    "react",
+    "react-dom",
+    "motion",
+    "@mynaui/icons-react"
+  ],
+  "files": [
+    {
+      "source": "template/ConfiguredComponent.tsx",
+      "target": "ConfiguredComponent.tsx"
+    },
+    {
+      "source": "template/LICENSE",
+      "target": "LICENSE"
+    },
+    {
+      "source": "template/hero.webp",
+      "target": "hero.webp"
+    },
+    {
+      "source": "template/page.tsx",
+      "target": "page.tsx"
+    },
+    {
+      "source": "template/settings.json",
+      "target": "settings.json"
+    }
+  ],
+  "viteDependencies": {
+    "motion": "^12.38.0",
+    "@mynaui/icons-react": "^0.4.2"
+  },
+  "viteFiles": [
+    {
+      "source": "template/preview.html",
+      "target": "preview.html",
+      "shared": true
+    },
+    {
+      "source": "template/preview.tsx",
+      "target": "preview.tsx",
+      "shared": true
+    },
+    {
+      "source": "template/colly.css",
+      "target": "colly.css",
+      "shared": true
+    }
+  ]
+}

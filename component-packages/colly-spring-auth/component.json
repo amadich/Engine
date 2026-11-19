@@ -1,0 +1,49 @@
+{
+  "id": "colly-spring-auth",
+  "name": "Colly Authentication Kit",
+  "frameworks": [
+    "spring-boot"
+  ],
+  "category": [
+    "Spring Boot",
+    "Spring Security"
+  ],
+  "description": "JWT login, bearer or HttpOnly cookie transport, CSRF protection and a configurable bootstrap identity.",
+  "activation": "inspect",
+  "requiresDependencies": [
+    "security"
+  ],
+  "files": [
+    {
+      "source": "template/JwtSecurityConfig.java",
+      "target": "collyauth/JwtSecurityConfig.java"
+    },
+    {
+      "source": "template/JwtService.java",
+      "target": "collyauth/JwtService.java"
+    },
+    {
+      "source": "template/AuthOptions.java",
+      "target": "collyauth/AuthOptions.java"
+    },
+    {
+      "source": "template/JwtRequestResolver.java",
+      "target": "collyauth/JwtRequestResolver.java"
+    },
+    {
+      "source": "template/AuthController.java",
+      "target": "collyauth/AuthController.java"
+    }
+  ],
+  "conflicts": [
+    "spring-jwt-auth"
+  ],
+  "settingsPackage": "colly-spring-env",
+  "settingKeys": [
+    "jeridi.auth.cookie",
+    "jeridi.auth.cookie-secure",
+    "jeridi.auth.ttl-seconds",
+    "jeridi.auth.cors-origin"
+  ],
+  "settingsHint": "Install Application Environment to apply these settings at runtime. Restart Spring Boot after saving."
+}

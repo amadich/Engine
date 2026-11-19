@@ -4,6 +4,8 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSaveFile>
 #include <QSet>
 #include <QRegularExpression>
@@ -74,6 +76,22 @@ QString dependenciesError(const QString &projectPath, const QVariantMap &definit
         if (!enabled.contains(item))
             return "This component requires the '" + item
                    + "' dependency selected when creating the project.";
+    }
+    const QStringList npmDependencies = definition.value("requiresNpm").toStringList();
+    if (!npmDependencies.isEmpty()) {
+        QFile manifest(QDir(projectPath).filePath("package.json"));
+        if (!manifest.open(QIODevice::ReadOnly))
+            return QStringLiteral("Cannot read the project package.json.");
+        const auto package = QJsonDocument::fromJson(manifest.readAll()).object();
+        const auto dependencies = package.value("dependencies").toObject();
+        const auto development = package.value("devDependencies").toObject();
+        for (const auto &name : npmDependencies) {
+            if (!dependencies.contains(name) && !development.contains(name)
+                && !(definition.contains("viteFiles")
+                    && ProjectScaffolder::detect(projectPath).value("framework").toString() == "react-vite"
+                    && definition.value("viteDependencies").toMap().contains(name)))
+                return QStringLiteral("Add '%1' to the project's npm dependencies.").arg(name);
+        }
     }
     return {};
 }
@@ -155,7 +173,8 @@ QVariantMap ComponentInstaller::previewInstall(const QString &projectPath, const
             return result;
         }
         unique.insert(target);
-        QFile templateFile(QStringLiteral(":/component-packages/%1/%2").arg(id, source));
+        const QString sourcePackage = mapping.value("shared").toBool() ? "_shared" : id;
+        QFile templateFile(QStringLiteral(":/component-packages/%1/%2").arg(sourcePackage, source));
         if (!templateFile.open(QIODevice::ReadOnly) || templateFile.size() == 0) {
             result["error"] = QStringLiteral("Missing package template: ") + source;
             return result;
@@ -223,13 +242,20 @@ QString ComponentInstaller::install(const QString &projectPath, const QString &i
         if (!error.isEmpty())
             return error;
 
-        QFile templateFile(QStringLiteral(":/component-packages/%1/%2").arg(id, source));
+        const QString sourcePackage = mapping.value("shared").toBool() ? "_shared" : id;
+        QFile templateFile(QStringLiteral(":/component-packages/%1/%2").arg(sourcePackage, source));
         if (!templateFile.open(QIODevice::ReadOnly))
             return QStringLiteral("Cannot open template: ") + templateFile.fileName();
         QByteArray bytes = templateFile.readAll();
         if (templateFile.error() != QFileDevice::NoError || bytes.isEmpty())
             return QStringLiteral("Cannot read template: ") + templateFile.fileName();
 
+        if (target == "ConfiguredComponent.tsx" && definition.contains("viteFiles")
+            && ProjectScaffolder::detect(projectPath).value("framework").toString() == "react-vite") {
+            const qsizetype directiveEnd = bytes.indexOf('\n');
+            if (directiveEnd >= 0)
+                bytes.insert(directiveEnd + 1, "import \"./colly.css\";\n");
+        }
         if (!draftConfiguration.isEmpty() && target == configTarget)
             bytes = draftConfiguration.toUtf8();
         if (!javaPackage.isEmpty()) {

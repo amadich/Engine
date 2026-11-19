@@ -9,14 +9,57 @@
 #include <QFile>
 #include <QDesktopServices>
 #include <QStringList>
+#include <algorithm>
 
 namespace {
 const QString devServerAddress = QStringLiteral("http://127.0.0.1:5173/");
+const QString nextServerAddress = QStringLiteral("http://127.0.0.1:3000/");
 }
 
 namespace {
 
 constexpr qint64 kEditorLimit = 512 * 1024;
+
+QString readSpringEnvironment(const QDir &project, QProcessEnvironment &environment)
+{
+    const QFileInfo info(project.filePath(".env"));
+    if (info.isSymLink())
+        return QStringLiteral(".env must be a local project file.");
+    if (!info.exists())
+        return {};
+    QFile file(info.filePath());
+    if (!info.isFile() || info.size() > 64 * 1024 || !file.open(QIODevice::ReadOnly))
+        return QStringLiteral("Could not load the project .env file.");
+    const QStringList lines = QString::fromUtf8(file.readAll()).split('\n');
+    if (file.error() != QFileDevice::NoError)
+        return QStringLiteral("Could not read the project .env file.");
+
+    static const QRegularExpression property(
+        QStringLiteral("^(?:export\\s+)?([A-Z_][A-Z0-9_]*)\\s*=(.*)$"));
+    for (qsizetype index = 0; index < lines.size(); ++index) {
+        const QString line = lines.at(index).trimmed();
+        if (line.isEmpty() || line.startsWith('#'))
+            continue;
+        const auto match = property.match(line);
+        if (!match.hasMatch())
+            return QStringLiteral("Invalid or unsupported Spring .env entry on line %1.").arg(index + 1);
+        const QString key = match.captured(1);
+        static const QStringList prefixes{"JERIDI_", "SPRING_", "SERVER_", "DB_", "JWT_", "APP_", "MINIO_"};
+        if (std::none_of(prefixes.cbegin(), prefixes.cend(),
+                         [&key](const QString &prefix) { return key.startsWith(prefix); }))
+            continue;
+        QString value = match.captured(2).trimmed();
+        if (value.startsWith('"') || value.startsWith('\'')) {
+            if (value.size() < 2 || value.back() != value.front())
+                return QStringLiteral("Unclosed quote in .env on line %1.").arg(index + 1);
+            value = value.mid(1, value.size() - 2);
+        }
+        if (value.contains(QChar::Null))
+            return QStringLiteral("Invalid .env value on line %1.").arg(index + 1);
+        environment.insert(key, value);
+    }
+    return {};
+}
 
 bool isImageFile(const QString &suffix)
 {
@@ -87,8 +130,11 @@ ProjectController::ProjectController(QObject *parent)
 
                 m_devServerOutputTail += text;
 
-                if (m_devServerOutputTail.contains(devServerAddress)) {
-                    m_previewUrl = QUrl(devServerAddress);
+                const bool next = projectFramework() == "next-js";
+                const QString address = next ? nextServerAddress : devServerAddress;
+                const QString marker = next ? QStringLiteral("Ready in") : address;
+                if (m_devServerOutputTail.contains(marker)) {
+                    m_previewUrl = QUrl(address);
                     m_devServerOutputTail.clear();
                     emit previewUrlChanged();
                     return;
@@ -96,8 +142,13 @@ ProjectController::ProjectController(QObject *parent)
 
                 // Keep enough text to recognize the URL across two output chunks.
                 m_devServerOutputTail =
-                    m_devServerOutputTail.right(devServerAddress.size() - 1);
+                    m_devServerOutputTail.right(marker.size() - 1);
             });
+}
+
+QStringList ProjectController::supportedProjectFrameworks() const
+{
+    return ProjectScaffolder::supportedFrameworks();
 }
 
 QString ProjectController::activeProjectName() const
@@ -352,8 +403,14 @@ void ProjectController::startDevServer()
             emit logMessage("Error: Spring Boot pom.xml is missing.");
             return;
         }
+        QProcessEnvironment environment;
+        const QString error = readSpringEnvironment(projectDirectory, environment);
+        if (!error.isEmpty()) {
+            emit logMessage(error);
+            return;
+        }
         m_devServerRequested = true;
-        m_processRunner.run("mvn", {"spring-boot:run"}, m_activeProjectPath);
+        m_processRunner.run("mvn", {"spring-boot:run"}, m_activeProjectPath, environment);
         if (!busy()) m_devServerRequested = false;
         return;
     }
@@ -364,6 +421,18 @@ void ProjectController::startDevServer()
         }
         m_devServerRequested = true;
         m_processRunner.run("npm", {"run", "dev"}, m_activeProjectPath);
+        if (!busy()) m_devServerRequested = false;
+        return;
+    }
+    if (framework == "next-js") {
+        const QString script = projectDirectory.absoluteFilePath("node_modules/next/dist/bin/next");
+        if (!QFileInfo(script).isFile()) {
+            emit logMessage("Error: Install npm dependencies before running Next.js.");
+            return;
+        }
+        m_devServerRequested = true;
+        m_processRunner.run("node", {script, "dev", "--hostname", "127.0.0.1", "--port", "3000"},
+                            m_activeProjectPath);
         if (!busy()) m_devServerRequested = false;
         return;
     }
@@ -395,6 +464,37 @@ void ProjectController::startDevServer()
     if (!busy()) {
         m_devServerRequested = false;
     }
+}
+
+void ProjectController::showComponentPreview(const QString &directory)
+{
+    if (m_previewUrl.isEmpty())
+        return;
+    static const QRegularExpression nextRoute(
+        QStringLiteral("^(?:src/)?app/([a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)$"));
+    static const QRegularExpression viteDirectory(
+        QStringLiteral("^[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*$"));
+    QUrl url;
+    if (projectFramework() == "next-js") {
+        const auto match = nextRoute.match(directory);
+        if (!match.hasMatch())
+            return;
+        url = QUrl(nextServerAddress);
+        url.setPath("/" + match.captured(1));
+    } else if (projectFramework() == "react-vite" && viteDirectory.match(directory).hasMatch()) {
+        const QString page = directory + "/preview.html";
+        if (!QFileInfo(QDir(m_activeProjectPath).filePath(page)).isFile())
+            return;
+        url = QUrl(devServerAddress);
+        url.setPath("/" + page);
+    }
+    if (url.isEmpty())
+        return;
+    if (url != m_previewUrl) {
+        m_previewUrl = url;
+        emit previewUrlChanged();
+    }
+    emit packagePreviewRequested();
 }
 
 void ProjectController::stopDevServer()

@@ -11,8 +11,79 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSaveFile>
 
 ComponentManager::ComponentManager(QObject *parent) : QObject(parent) {}
+
+QVariantMap ComponentManager::activeDefinition(const QString &id) const
+{
+    auto definition = ComponentRegistry::instance().component(id);
+    if (m_projectController && m_projectController->projectFramework() == "react-vite"
+        && definition.contains("viteFiles")) {
+        auto files = definition.value("files").toList();
+        files.append(definition.value("viteFiles").toList());
+        definition.insert("files", files);
+    }
+    return definition;
+}
+
+namespace {
+struct NpmUpdate {
+    QString path;
+    QByteArray original;
+    QByteArray updated;
+    QStringList additions;
+    QString error;
+};
+
+NpmUpdate planNpmUpdate(const QString &projectPath, const QVariantMap &dependencies)
+{
+    NpmUpdate result;
+    if (dependencies.isEmpty())
+        return result;
+    result.path = QDir(projectPath).filePath("package.json");
+    QFile file(result.path);
+    if (QFileInfo(file).isSymLink() || !file.open(QIODevice::ReadOnly)) {
+        result.error = "Cannot update project package.json.";
+        return result;
+    }
+    result.original = file.readAll();
+    const auto document = QJsonDocument::fromJson(result.original);
+    if (!document.isObject()) {
+        result.error = "Project package.json is not a JSON object.";
+        return result;
+    }
+    auto manifest = document.object();
+    auto existing = manifest.value("dependencies").toObject();
+    if (manifest.contains("dependencies") && !manifest.value("dependencies").isObject()) {
+        result.error = "package.json dependencies must be a JSON object.";
+        return result;
+    }
+    const auto development = manifest.value("devDependencies").toObject();
+    for (auto item = dependencies.cbegin(); item != dependencies.cend(); ++item) {
+        if (existing.contains(item.key()) || development.contains(item.key()))
+            continue;
+        existing.insert(item.key(), item.value().toString());
+        result.additions.append(item.key());
+    }
+    if (!result.additions.isEmpty()) {
+        manifest.insert("dependencies", existing);
+        result.updated = QJsonDocument(manifest).toJson();
+    }
+    return result;
+}
+
+bool writeNpmManifest(const QString &path, const QByteArray &expected, const QByteArray &updated)
+{
+    QFile input(path);
+    if (QFileInfo(input).isSymLink() || !input.open(QIODevice::ReadOnly)
+        || input.readAll() != expected)
+        return false;
+    input.close();
+    QSaveFile file(path);
+    return file.open(QIODevice::WriteOnly) && file.write(updated) == updated.size() && file.commit();
+}
+}
 
 ProjectController *ComponentManager::projectController() const
 {
@@ -38,7 +109,7 @@ void ComponentManager::requestInstall(const QString &id)
 {
     if (m_projectController && ProjectScaffolder::compatible(
             m_projectController->activeProjectPath(),
-            ComponentRegistry::instance().component(id)))
+            activeDefinition(id)))
         emit installRequested(id);
 }
 
@@ -57,7 +128,7 @@ void ComponentManager::requestRemove(const QString &id)
 QVariantMap ComponentManager::previewInstall(const QString &id,
                                              const QString &relativeDirectory) const
 {
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     if (definition.isEmpty())
         return {{"error", QStringLiteral("Unknown component package.")}};
     if (!m_projectController || m_projectController->activeProjectPath().isEmpty())
@@ -71,6 +142,14 @@ QVariantMap ComponentManager::previewInstall(const QString &id,
     const QString registryError = ComponentInstallationStore::load(projectPath, &registry);
     if (!registryError.isEmpty())
         return {{"error", registryError}};
+
+    for (const auto &conflict : definition.value("conflicts").toStringList()) {
+        if (!installedDirectory(conflict).isEmpty())
+            return {{"error", QStringLiteral("Remove the conflicting package '%1' first.").arg(conflict)}};
+    }
+    const QString requiredDirectory = definition.value("requiredDirectory").toString();
+    if (!requiredDirectory.isEmpty() && relativeDirectory != requiredDirectory)
+        return {{"error", QStringLiteral("This package must be installed in '%1'.").arg(requiredDirectory)}};
 
     if (isInstalled(id))
         return {{"error", QStringLiteral("Already installed at '%1'. Use Move Component to change location.")
@@ -98,7 +177,16 @@ QVariantMap ComponentManager::previewInstall(const QString &id,
                 {"status", QStringLiteral("broken")},
                 {"repairable", !anyFilesRemain}, {"recordedDirectory", directory}};
     }
-    return ComponentInstaller::previewInstall(projectPath, id, definition, relativeDirectory);
+    auto preview = ComponentInstaller::previewInstall(projectPath, id, definition, relativeDirectory);
+    if (m_projectController->projectFramework() == "react-vite"
+        && preview.value("error").toString().isEmpty()) {
+        const auto npm = planNpmUpdate(projectPath, definition.value("viteDependencies").toMap());
+        preview.insert("error", npm.error);
+        preview.insert("npmAdditions", npm.additions);
+        if (!npm.additions.isEmpty() && m_projectController->devServerActive())
+            preview.insert("error", "Stop the server before adding npm dependencies.");
+    }
+    return preview;
 }
 
 QString ComponentManager::repairMissingInstallation(const QString &id)
@@ -116,7 +204,7 @@ QString ComponentManager::repairMissingInstallation(const QString &id)
     const QString directory = recorded.value("directory").toString();
     if (!ComponentInstaller::validDirectory(directory))
         return QStringLiteral("Invalid recorded directory. Repair it manually.");
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     for (const QVariant &item : definition.value("files").toList()) {
         const QString path = ComponentInstaller::combinedPath(directory,
                                    item.toMap().value("target").toString());
@@ -135,7 +223,9 @@ QVariantMap ComponentManager::previewMove(const QString &id,
 {
     if (!m_projectController || !isInstalled(id))
         return {{"error", QStringLiteral("This component is not installed.")}};
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
+    if (!definition.value("requiredDirectory").toString().isEmpty())
+        return {{"error", QStringLiteral("This package has a fixed runtime location.")}};
     for (const QVariant &file : definition.value("files").toList()) {
         if (file.toMap().value("target").toString().endsWith(".java"))
             return {{"error", QStringLiteral("Java package relocation is disabled until imports and package declarations can be rewritten safely.")}};
@@ -144,7 +234,7 @@ QVariantMap ComponentManager::previewMove(const QString &id,
     if (project.isEmpty())
         return {{"error", QStringLiteral("Project folder is unavailable.")}};
     return ComponentLifecycle::previewMove(project, id,
-        ComponentRegistry::instance().component(id), installedDirectory(id), relativeDirectory);
+        activeDefinition(id), installedDirectory(id), relativeDirectory);
 }
 
 QString ComponentManager::moveComponentInDirectory(const QString &id,
@@ -152,7 +242,9 @@ QString ComponentManager::moveComponentInDirectory(const QString &id,
 {
     if (!m_projectController || !isInstalled(id))
         return QStringLiteral("This component is not installed.");
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
+    if (!definition.value("requiredDirectory").toString().isEmpty())
+        return QStringLiteral("This package has a fixed runtime location.");
     for (const QVariant &file : definition.value("files").toList()) {
         if (file.toMap().value("target").toString().endsWith(".java"))
             return QStringLiteral("Java package relocation is not supported safely yet.");
@@ -169,7 +261,7 @@ QString ComponentManager::moveComponentInDirectory(const QString &id,
     const QString previous = installedDirectory(id);
     QString cleanupNote;
     const QString error = ComponentLifecycle::move(project, id,
-        ComponentRegistry::instance().component(id), previous, relativeDirectory, &cleanupNote);
+        activeDefinition(id), previous, relativeDirectory, &cleanupNote);
     if (!error.isEmpty())
         return error;
     emit logMessage(QStringLiteral("Component moved: %1 → %2").arg(id, relativeDirectory));
@@ -187,7 +279,7 @@ QVariantMap ComponentManager::previewRemove(const QString &id) const
     if (project.isEmpty())
         return {{"error", QStringLiteral("Project folder is unavailable.")}};
     return ComponentLifecycle::previewRemove(project, id,
-        ComponentRegistry::instance().component(id), installedDirectory(id));
+        activeDefinition(id), installedDirectory(id));
 }
 
 QString ComponentManager::removeComponent(const QString &id)
@@ -206,7 +298,7 @@ QString ComponentManager::removeComponent(const QString &id)
     QString backup;
     QString cleanupNote;
     const QString error = ComponentLifecycle::remove(project, id,
-        ComponentRegistry::instance().component(id), installedDirectory(id), &backup,
+        activeDefinition(id), installedDirectory(id), &backup,
         &cleanupNote);
     if (!error.isEmpty())
         return error;
@@ -251,7 +343,7 @@ QString ComponentManager::installedDirectory(const QString &id) const
         return entry.value("directory").toString();
 
     // Preserve access to components installed before this registry existed.
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     const QString legacy = definition.value("legacyDirectory").toString();
     if (ComponentInstaller::validDirectory(legacy)
         && ComponentInstaller::isInstalled(projectPath, definition, legacy))
@@ -263,7 +355,7 @@ bool ComponentManager::isInstalled(const QString &id) const
 {
     if (!m_projectController)
         return false;
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     const QString directory = installedDirectory(id);
     return !definition.isEmpty() && !directory.isEmpty()
         && ComponentInstaller::isInstalled(m_projectController->activeProjectPath(),
@@ -274,7 +366,7 @@ QUrl ComponentManager::configurationUrl(const QString &id) const
 {
     if (!m_projectController || !isInstalled(id))
         return {};
-    const QString target = ComponentRegistry::instance().component(id)
+    const QString target = activeDefinition(id)
                                .value("configTarget").toString();
     if (!ComponentInstaller::validTarget(target))
         return {};
@@ -288,7 +380,7 @@ QString ComponentManager::draftConfiguration(const QString &id) const
     if (found != m_drafts.cend())
         return found.value();
 
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     const QString configTarget = definition.value("configTarget").toString();
     if (!ComponentInstaller::validTarget(configTarget))
         return {};
@@ -307,16 +399,16 @@ QString ComponentManager::draftConfiguration(const QString &id) const
 
 QString ComponentManager::setDraftConfiguration(const QString &id, const QString &jsonText)
 {
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     if (definition.isEmpty() || !ComponentInstaller::validTarget(
             definition.value("configTarget").toString()))
         return QStringLiteral("This component does not support configuration previews.");
-    QJsonParseError error;
     const QByteArray bytes = jsonText.toUtf8();
-    const QJsonDocument doc = QJsonDocument::fromJson(bytes, &error);
-    if (error.error != QJsonParseError::NoError || !doc.isObject()
-        || bytes.size() > 64 * 1024)
-        return QStringLiteral("Configuration must be a JSON object of at most 64 KiB.");
+    if (bytes.size() > 64 * 1024 || bytes.contains('\0'))
+        return QStringLiteral("Configuration must be text of at most 64 KiB.");
+    if (definition.value("configFormat").toString() != "properties"
+        && !QJsonDocument::fromJson(bytes).isObject())
+        return QStringLiteral("Configuration must be a JSON object.");
     m_drafts.insert(id, jsonText);
     return {};
 }
@@ -324,7 +416,7 @@ QString ComponentManager::setDraftConfiguration(const QString &id, const QString
 QString ComponentManager::installComponentInDirectory(const QString &id,
                                                        const QString &relativeDirectory)
 {
-    const QVariantMap definition = ComponentRegistry::instance().component(id);
+    const QVariantMap definition = activeDefinition(id);
     if (definition.isEmpty())
         return QStringLiteral("Unknown component: ") + id;
     if (!m_projectController || m_projectController->activeProjectPath().isEmpty())
@@ -349,6 +441,13 @@ QString ComponentManager::installComponentInDirectory(const QString &id,
     if (!preflightError.isEmpty())
         return preflightError;
 
+    const auto npm = m_projectController->projectFramework() == "react-vite"
+        ? planNpmUpdate(projectPath, definition.value("viteDependencies").toMap()) : NpmUpdate{};
+    if (!npm.error.isEmpty())
+        return npm.error;
+    if (!npm.additions.isEmpty() && m_projectController->devServerActive())
+        return "Stop the server before adding npm dependencies.";
+
     QStringList createdFiles;
     const QString error = ComponentInstaller::install(
         projectPath, id, definition, relativeDirectory, m_drafts.value(id), &createdFiles);
@@ -358,14 +457,24 @@ QString ComponentManager::installComponentInDirectory(const QString &id,
         return error;
     }
 
+    if (!npm.updated.isEmpty() && !writeNpmManifest(npm.path, npm.original, npm.updated)) {
+        for (const auto &path : createdFiles)
+            QFile::remove(path);
+        return "package.json changed or could not be saved. No package was installed.";
+    }
+
     const QString recordError = ComponentInstallationStore::record(
         projectPath, id, relativeDirectory, definition);
     if (!recordError.isEmpty()) {
         for (const QString &path : createdFiles)
             QFile::remove(path);
+        if (!npm.updated.isEmpty() && !writeNpmManifest(npm.path, npm.updated, npm.original))
+            return recordError + " Check package.json, which could not be restored.";
         return recordError;
     }
 
+    if (!npm.additions.isEmpty())
+        emit logMessage("Added packages to package.json. Run Install Dependencies before starting the server.");
     m_drafts.remove(id);
     emit logMessage(QStringLiteral("Component installed: %1 → %2")
                         .arg(definition.value("name").toString(), relativeDirectory));

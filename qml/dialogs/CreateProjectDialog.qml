@@ -131,7 +131,7 @@ Dialog {
                 Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 17; color: S.line; Layout.leftMargin: 7; Layout.rightMargin: 5 }
                 Label { text: "JERIDI ENGINE  /  PROJECT GENERATOR"; color: S.muted; font.pixelSize: 10; font.letterSpacing: 0.6 }
                 Item { Layout.fillWidth: true }
-                Label { text: "v0.3"; color: S.faint; font.pixelSize: 10 }
+                Label { text: "v" + Qt.application.version; color: S.faint; font.pixelSize: 10 }
                 WizardActionButton {
                     text: "✕"
                     Layout.preferredWidth: 28
@@ -149,6 +149,7 @@ Dialog {
             ProjectTypeSidebar {
                 Layout.preferredWidth: 213
                 Layout.fillHeight: true
+                supportedFrameworks: root.controller.supportedProjectFrameworks || []
                 framework: root.framework
                 onFrameworkSelected: function(id) { root.selectFramework(id) }
             }

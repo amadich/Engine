@@ -327,6 +327,14 @@ ApplicationWindow {
         }
     }
 
+    Connections {
+        target: projectController
+        function onPackagePreviewRequested() {
+            workspace.restoreFocus()
+            workspace.editorWorkspace.showPreview()
+        }
+    }
+
     WorkspaceView {
         id: workspace
         visible: !window.launcherVisible

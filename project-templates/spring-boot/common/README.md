@@ -12,3 +12,17 @@ The Spring Security starter, if selected, requires configuring authentication.
 For a JWT foundation, install the optional Spring JWT Authentication Kit in
 the Component Library and supply a strong `JERIDI_JWT_SECRET` environment variable.
 No demo secret or production credentials are written by the generator.
+
+## Colly packages
+
+To try authentication and persistence together, select Security, Validation,
+Spring Data JPA and H2 in the wizard. Install the Colly Authentication Kit,
+Room CRUD and Application Environment packages from the Component Library.
+Set the schema mode to `update` for a disposable local H2 database.
+
+Copy `config/colly.env.example` to `.env` at the project root and supply the
+bootstrap username, a bcrypt password hash prefixed with `{bcrypt}`, and a
+random JWT signing secret of at least 32 bytes. Run from Jeridi Engine to load
+the project `.env`, or pass the equivalent variables to Maven in your shell.
+The Inspector stores application settings in `config/application.properties`.
+Restart the server after changing these settings.

@@ -21,6 +21,7 @@ public:
         bool success() const { return error.isEmpty(); }
     };
 
+    static QStringList supportedFrameworks();
     static Result create(const QVariantMap &options);
     static QVariantMap detect(const QString &projectPath);
     static bool compatible(const QString &projectPath, const QVariantMap &definition);

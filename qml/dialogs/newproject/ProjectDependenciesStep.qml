@@ -38,6 +38,7 @@ Item {
     function coreLabel() {
         if (framework === "spring-boot") return "Spring Web · Spring Boot Test"
         if (framework === "express-ts") return "Express · TypeScript · tsx"
+        if (framework === "next-js") return "Next.js · Tailwind CSS · Radix UI · Motion · Mynaui · shadcn"
         if (framework === "react-vite") return "React · React DOM · Vite · TypeScript"
         if (framework === "vue-vite") return "Vue · Vite · TypeScript"
         return "HTML5 · CSS3 · JavaScript"

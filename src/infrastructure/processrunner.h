@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QStringList>
 
 class ProcessRunner : public QObject
@@ -15,7 +16,8 @@ public:
     bool running() const;
     void run(const QString &program,
              const QStringList &arguments,
-             const QString &workingDirectory = QString());
+             const QString &workingDirectory = QString(),
+             const QProcessEnvironment &projectEnvironment = {});
     void stop();
 
 signals:

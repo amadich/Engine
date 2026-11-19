@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationDomain("jeridi.dev");
     QCoreApplication::setApplicationName("JeridiEngine");
 
-    QCoreApplication::setApplicationVersion("0.6.0");
+    QCoreApplication::setApplicationVersion("0.6.3");
 
     QQmlApplicationEngine engine;
 

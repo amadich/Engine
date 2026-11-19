@@ -6,6 +6,7 @@ import "WizardStyle.js" as S
 
 Rectangle {
     id: root
+    required property var supportedFrameworks
     property string framework: "react-vite"
     signal frameworkSelected(string id)
     color: S.side
@@ -106,7 +107,7 @@ Rectangle {
                     height: 25
                 }
                 Repeater {
-                    model: Profiles.frontend
+                    model: Profiles.frontend.filter(item => root.supportedFrameworks.includes(item.id))
                     FrameworkEntry {
                         required property var modelData
                         definition: modelData
@@ -126,7 +127,7 @@ Rectangle {
                     height: 25
                 }
                 Repeater {
-                    model: Profiles.backend
+                    model: Profiles.backend.filter(item => root.supportedFrameworks.includes(item.id))
                     FrameworkEntry {
                         required property var modelData
                         definition: modelData
@@ -145,7 +146,7 @@ Rectangle {
             RowLayout {
                 spacing: 6
                 Rectangle { Layout.preferredWidth: 6; Layout.preferredHeight: 6; radius: 3; color: S.success }
-                Label { text: "5 LOCAL GENERATORS"; color: S.text; font.pixelSize: 10; font.weight: Font.DemiBold }
+                Label { text: root.supportedFrameworks.length + " LOCAL GENERATORS"; color: S.text; font.pixelSize: 10; font.weight: Font.DemiBold }
             }
             Label {
                 Layout.fillWidth: true

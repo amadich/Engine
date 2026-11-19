@@ -14,7 +14,7 @@ Rectangle {
     Label {
         anchors.centerIn: parent
         visible: !previewLoader.active
-        text: root.devServerActive ? "Waiting for Vite…" : "Project preview"
+        text: root.devServerActive ? "Waiting for the development server…" : "Project preview"
         color: Theme.colors.text
         font.pixelSize: 24
     }

@@ -49,7 +49,8 @@ bool ProcessRunner::running() const
 
 void ProcessRunner::run(const QString &program,
                         const QStringList &arguments,
-                        const QString &workingDirectory)
+                        const QString &workingDirectory,
+                        const QProcessEnvironment &projectEnvironment)
 {
     if (running()) {
         emit logMessage("A process is already running.");
@@ -66,6 +67,10 @@ void ProcessRunner::run(const QString &program,
     }
 
     QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    for (const auto &key : projectEnvironment.keys()) {
+        if (!environment.contains(key))
+            environment.insert(key, projectEnvironment.value(key));
+    }
     QStringList searchPaths = environment.value("PATH").split(
         QDir::listSeparator(), Qt::SkipEmptyParts
     );
