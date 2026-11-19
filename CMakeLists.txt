@@ -8,8 +8,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebView Network)
 qt_standard_project_setup(REQUIRES 6.8)
 
+# Native application branding for macOS and Windows.
+set(JERIDI_MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/branding/JeridiEngine.icns")
+set_source_files_properties("${JERIDI_MACOS_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
+if(WIN32)
+    set(JERIDI_WINDOWS_RESOURCES "${CMAKE_CURRENT_SOURCE_DIR}/assets/branding/JeridiEngine.rc")
+else()
+    set(JERIDI_WINDOWS_RESOURCES "")
+endif()
+
 qt_add_executable(appJeridiEngine
     src/main.cpp
+    ${JERIDI_MACOS_ICON}
+    ${JERIDI_WINDOWS_RESOURCES}
 )
 
 # Package data is collected automatically. New packages only need their own files.
@@ -234,6 +246,11 @@ target_link_libraries(appJeridiEngine PRIVATE
 
 set_target_properties(appJeridiEngine PROPERTIES
     MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_BUNDLE_NAME "JeridiEngine"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "dev.jeridi.engine"
+    MACOSX_BUNDLE_ICON_FILE "JeridiEngine.icns"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
     WIN32_EXECUTABLE TRUE
 )
 
